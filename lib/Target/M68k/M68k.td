@@ -27,7 +27,7 @@ def : Processor<"m68k", NoItineraries, []>;
 //===----------------------------------------------------------------------===//
 
 include "M68kRegisterInfo.td"
-// include "M68kCallingConv.td"
+include "M68kCallingConv.td"
 include "M68kInstrInfo.td"
 
 def M68kInstrInfo : InstrInfo;
