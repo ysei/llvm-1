@@ -17,5 +17,11 @@
 
 using namespace llvm;
 
-M68kInstrInfo::M68kInstrInfo(M68kTargetMachine &TM) : TM(TM) {
+M68kInstrInfo::M68kInstrInfo(M68kTargetMachine &TM)
+    : TM(TM),
+      RI(TM, *this) {
+}
+
+const M68kRegisterInfo &M68kInstrInfo::getRegisterInfo() const {
+    return RI;
 }

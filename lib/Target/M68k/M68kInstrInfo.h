@@ -13,6 +13,7 @@
 #ifndef M68KINSTRINFO_H
 #define M68KINSTRINFO_H
 
+#include "M68kRegisterInfo.h"
 #include "llvm/Target/TargetInstrInfo.h"
 
 #define GET_INSTRINFO_HEADER
@@ -23,8 +24,12 @@ namespace llvm {
 
   class M68kInstrInfo : public M68kGenInstrInfo {
     M68kTargetMachine &TM;
+    M68kRegisterInfo RI;
+
   public:
     explicit M68kInstrInfo(M68kTargetMachine &TM);
+
+    virtual const M68kRegisterInfo &getRegisterInfo() const;
   };
 } // end namespace llvm
 

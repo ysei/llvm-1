@@ -51,6 +51,9 @@ public:
   virtual const M68kSelectionDAGInfo *getSelectionDAGInfo() const {
     return &TSInfo;
   }
+  virtual const M68kRegisterInfo *getRegisterInfo() const {
+    return &InstrInfo.getRegisterInfo();
+  }
 };
 
 } // end namespace llvm

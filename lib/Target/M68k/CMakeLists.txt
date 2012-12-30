@@ -12,6 +12,7 @@ add_llvm_target(M68kCodeGen
   M68kFrameLowering.cpp
   M68kISelLowering.cpp
   M68kInstrInfo.cpp
+  M68kRegisterInfo.cpp
   M68kSelectionDAGInfo.cpp
   M68kSubtarget.cpp
   M68kTargetMachine.cpp
