@@ -19,5 +19,5 @@
 type = Library
 name = M68kDesc
 parent = M68k
-required_libraries = MC M68kInfo Support
+required_libraries = MC M68kAsmPrinter M68kInfo Support
 add_to_library_groups = M68k

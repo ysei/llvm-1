@@ -13,6 +13,7 @@
 #include "M68kISelLowering.h"
 #include "M68k.h"
 #include "M68kTargetMachine.h"
+#include "M68kRegisterInfo.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
@@ -22,14 +23,11 @@ using namespace llvm;
 
 M68kTargetLowering::M68kTargetLowering(M68kTargetMachine &TM)
   : TargetLowering(TM, new TargetLoweringObjectFileELF()) {
-  // TODO
-#if 0
   // Setup register classes
-  addRegisterClass(MVT::i8, M68k::DR8RegClass);
-  addRegisterClass(MVT::i16, M68k::DR16RegClass);
-  addRegisterClass(MVT::i32, M68k::DR32RegClass);
+  addRegisterClass(MVT::i8, &M68k::DR8RegClass);
+  addRegisterClass(MVT::i16, &M68k::DR16RegClass);
+  addRegisterClass(MVT::i32, &M68k::DR32RegClass);
   computeRegisterProperties();
-#endif
 }
 
 
