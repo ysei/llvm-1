@@ -12,6 +12,8 @@
 
 #include "M68kRegisterInfo.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 
 #define GET_REGINFO_TARGET_DESC
 #include "M68kGenRegisterInfo.inc"
@@ -34,7 +36,27 @@ const uint32_t *M68kRegisterInfo::getCallPreservedMask(CallingConv::ID) const {
 
 void M68kRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj, RegScavenger *RS) const {
-  // TODO
+  MachineInstr &MI = *II;
+  MachineFunction &MF = *MI.getParent()->getParent();
+
+  unsigned i = 0;
+  while (!MI.getOperand(i).isFI()) {
+    ++i;
+    assert(i < MI.getNumOperands() &&
+           "Instr doesn't have FrameIndex operand!");
+  }
+
+  int FrameIndex = MI.getOperand(i).getIndex();
+  uint64_t StackSize = MF.getFrameInfo()->getStackSize();
+  int64_t SpOffset = MF.getFrameInfo()->getObjectOffset(FrameIndex);
+
+  unsigned FrameReg = getFrameRegister(MF);
+  int64_t Offset = SpOffset + (int64_t)StackSize +
+                   MI.getOperand(i + 1).getImm();
+
+  // TODO This doesn't get the correct offset.
+  MI.getOperand(i).ChangeToRegister(FrameReg, false);
+  MI.getOperand(i + 1).ChangeToImmediate(Offset);
 }
 
 BitVector M68kRegisterInfo::getReservedRegs(const MachineFunction &MF) const {

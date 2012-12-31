@@ -50,3 +50,14 @@ void M68kInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 
   llvm_unreachable("Unknown operand type.");
 }
+
+void M68kInstPrinter::printMemOperand(const MCInst *MI, unsigned OpNo,
+                                      raw_ostream &O) {
+  const MCOperand &Base = MI->getOperand(OpNo);
+  const MCOperand Disp = MI->getOperand(OpNo + 1);
+  assert(Base.isReg() && Disp.isImm());
+
+  O << Disp.getImm() << "(";
+  printRegName(O, Base.getReg());
+  O << ")";
+}

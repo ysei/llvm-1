@@ -40,6 +40,9 @@ public:
 private:
   // Tablegenerated selector
   #include "M68kGenDAGISel.inc"
+
+  // Complex Patterns.
+  bool SelectAddr(SDNode *Parent, SDValue N, SDValue &Base, SDValue &Offset);
 };
 } // end anonymous namespace
 
@@ -54,6 +57,21 @@ SDNode *M68kDAGToDAGISel::Select(SDNode *Node) {
   SDNode *ResNode = SelectCode(Node);
 
   return ResNode;
+}
+
+bool M68kDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
+                                  SDValue &Offset) {
+  EVT ValTy = Addr.getValueType();
+
+  // Frame index matcher
+  if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
+    Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+    Offset = CurDAG->getTargetConstant(0, MVT::i16);
+    return true;
+  }
+
+  // TODO other memory matching
+  return false;
 }
 
 FunctionPass *llvm::createM68kISelDag(M68kTargetMachine &TM) {

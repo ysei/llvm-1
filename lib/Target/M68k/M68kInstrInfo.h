@@ -30,6 +30,11 @@ namespace llvm {
     explicit M68kInstrInfo(M68kTargetMachine &TM);
 
     virtual const M68kRegisterInfo &getRegisterInfo() const;
+
+    virtual void copyPhysReg(MachineBasicBlock &MBB,
+                             MachineBasicBlock::iterator MI, DebugLoc DL,
+                             unsigned DestReg, unsigned SrcReg,
+                             bool KillSrc) const;
   };
 } // end namespace llvm
 
