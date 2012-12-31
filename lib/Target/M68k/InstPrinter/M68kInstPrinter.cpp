@@ -43,9 +43,9 @@ void M68kInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
     printRegName(O, Op.getReg());
     return;
   }
-
   if (Op.isImm()) {
     O << "#" << Op.getImm();
+    return;
   }
 
   llvm_unreachable("Unknown operand type.");

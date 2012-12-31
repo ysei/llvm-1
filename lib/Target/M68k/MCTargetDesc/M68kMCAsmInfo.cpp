@@ -35,6 +35,8 @@ M68kMCAsmInfo::M68kMCAsmInfo(const Target &T, StringRef TT) {
 
   AlignDirective = "ALIGN";
 
+  // Taken from NVPTX.  I wish we could get rid of it. TODO.
+  GlobalDirective = "; GLOBAL ";
   HasSetDirective = false;
   HasDotTypeDotSizeDirective = false;
   HasSingleParameterDotFile = false;

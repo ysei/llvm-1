@@ -15,7 +15,7 @@
 using namespace llvm;
 
 M68kFrameLowering::M68kFrameLowering(const M68kSubtarget &ST)
-  : TargetFrameLowering(StackGrowsDown, 2, 2) {
+  : TargetFrameLowering(StackGrowsDown, 2, 0) {
 }
 
 void M68kFrameLowering::emitPrologue(MachineFunction &MF) const {

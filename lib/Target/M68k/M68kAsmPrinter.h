@@ -24,6 +24,10 @@ public:
   virtual const char *getPassName() const {
     return "M68k Assembly Printer";
   }
+
+  virtual void EmitFunctionEntryLabel();
+  virtual void EmitInstruction(const MachineInstr *MI);
+  virtual void EmitEndOfAsmFile(Module &);
 };
 
 } // end namespace llvm

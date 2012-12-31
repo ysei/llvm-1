@@ -28,10 +28,7 @@ namespace {
       return getTM<M68kTargetMachine>();
     }
 
-#if 0
-    // TODO
     virtual bool addInstSelector();
-#endif
   };
 }
 
@@ -52,6 +49,12 @@ M68kTargetMachine(const Target &T, StringRef TT, StringRef CPU, StringRef FS,
     InstrInfo(*this),
     FrameLowering(Subtarget),
     TSInfo(*this) {
+}
+
+bool M68kPassConfig::addInstSelector()
+{
+    addPass(createM68kISelDag(getM68kTargetMachine()));
+    return false;
 }
 
 TargetPassConfig *M68kTargetMachine::createPassConfig(PassManagerBase &PM) {

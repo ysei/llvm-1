@@ -1,4 +1,4 @@
-//===-- M68k.h - Top-level interface for M68k--------------------*- C++ -*-===//
+//===-- M68kMCInstLower.h - Convert M68k MI to MCInst -----------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -10,17 +10,19 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef TARGET_M68K_H
-#define TARGET_M68K_H
-
-#include "MCTargetDesc/M68kMCTargetDesc.h"
-#include "llvm/Target/TargetMachine.h"
+#ifndef M68KMCINSTLOWER_H
+#define M68KMCINSTLOWER_H
 
 namespace llvm {
 
-class M68kTargetMachine;
+class MachineInstr;
+class MCInst;
 
-FunctionPass *createM68kISelDag(M68kTargetMachine &TM);
+class M68kMCInstLower {
+public:
+  void lower(const MachineInstr *MI, MCInst &OutMI) const;
+};
 
 } // end namespace llvm
+
 #endif

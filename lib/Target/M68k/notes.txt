@@ -1,0 +1,4 @@
+Need to finish implementing M68MCInstLower.
+
+Need to understand sections and how the linker deals with them.  May need to
+define our own MCSection and TargetLoweringObjectFile.
