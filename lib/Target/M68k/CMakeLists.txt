@@ -20,6 +20,7 @@ add_llvm_target(M68kCodeGen
   M68kSelectionDAGInfo.cpp
   M68kSubtarget.cpp
   M68kTargetMachine.cpp
+  M68kMacTargetObjectFile.cpp
   )
 
 add_subdirectory(InstPrinter)

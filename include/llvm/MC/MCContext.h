@@ -35,6 +35,7 @@ namespace llvm {
   class Twine;
   class MCSectionMachO;
   class MCSectionELF;
+  class MCSectionMPW;
 
   /// MCContext - Context object for machine code objects.  This class owns all
   /// of the sections that it creates.
@@ -135,7 +136,7 @@ namespace llvm {
     /// the elements were added.
     std::vector<const MCSection *> MCLineSectionOrder;
 
-    void *MachOUniquingMap, *ELFUniquingMap, *COFFUniquingMap;
+    void *MachOUniquingMap, *ELFUniquingMap, *COFFUniquingMap, *MPWUniquingMap;
 
     MCSymbol *CreateSymbol(StringRef Name);
 
@@ -228,6 +229,8 @@ namespace llvm {
                                     SectionKind Kind) {
       return getCOFFSection (Section, Characteristics, 0, Kind);
     }
+
+    const MCSectionMPW *getMPWSection(StringRef Section, SectionKind Kind);
 
 
     /// @}

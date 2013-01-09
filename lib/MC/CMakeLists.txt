@@ -32,6 +32,7 @@ add_llvm_library(LLVMMC
   MCSection.cpp
   MCSectionCOFF.cpp
   MCSectionELF.cpp
+  MCSectionMPW.cpp
   MCSectionMachO.cpp
   MCStreamer.cpp
   MCSubtargetInfo.cpp

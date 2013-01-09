@@ -14,6 +14,7 @@
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCSectionCOFF.h"
+#include "llvm/MC/MCSectionMPW.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCLabel.h"
 #include "llvm/MC/MCDwarf.h"
@@ -28,6 +29,7 @@ using namespace llvm;
 typedef StringMap<const MCSectionMachO*> MachOUniqueMapTy;
 typedef StringMap<const MCSectionELF*> ELFUniqueMapTy;
 typedef StringMap<const MCSectionCOFF*> COFFUniqueMapTy;
+typedef StringMap<const MCSectionMPW*> MPWUniqueMapTy;
 
 
 MCContext::MCContext(const MCAsmInfo &mai, const MCRegisterInfo &mri,
@@ -58,6 +60,7 @@ MCContext::~MCContext() {
   delete (MachOUniqueMapTy*)MachOUniquingMap;
   delete (ELFUniqueMapTy*)ELFUniquingMap;
   delete (COFFUniqueMapTy*)COFFUniquingMap;
+  delete (MPWUniqueMapTy*)MPWUniquingMap;
 
   // If the stream for the .secure_log_unique directive was created free it.
   delete (raw_ostream*)SecureLog;
@@ -246,6 +249,22 @@ const MCSection *MCContext::getCOFFSection(StringRef Section,
   MCSectionCOFF *Result = new (*this) MCSectionCOFF(Entry.getKey(),
                                                     Characteristics,
                                                     Selection, Kind);
+
+  Entry.setValue(Result);
+  return Result;
+}
+
+const MCSectionMPW *MCContext::getMPWSection(StringRef Section,
+                                             SectionKind Kind) {
+  if (MPWUniquingMap == 0)
+    MPWUniquingMap = new MPWUniqueMapTy();
+  MPWUniqueMapTy &Map = *(MPWUniqueMapTy*)MPWUniquingMap;
+
+  // Do the lookup, if we have a hit, return it.
+  StringMapEntry<const MCSectionMPW*> &Entry = Map.GetOrCreateValue(Section);
+  if (Entry.getValue()) return Entry.getValue();
+
+  MCSectionMPW *Result = new (*this) MCSectionMPW(Entry.getKey(), Kind);
 
   Entry.setValue(Result);
   return Result;

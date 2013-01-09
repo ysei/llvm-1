@@ -14,15 +14,15 @@
 #include "M68k.h"
 #include "M68kTargetMachine.h"
 #include "M68kRegisterInfo.h"
+#include "M68kMacTargetObjectFile.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/SelectionDAG.h"
-#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 using namespace llvm;
 
 M68kTargetLowering::M68kTargetLowering(M68kTargetMachine &TM)
-  : TargetLowering(TM, new TargetLoweringObjectFileELF()) {
+  : TargetLowering(TM, new M68kMacTargetLoweringObjectFile()) {
   // Setup register classes
   addRegisterClass(MVT::i8, &M68k::DR8RegClass);
   addRegisterClass(MVT::i16, &M68k::DR16RegClass);
