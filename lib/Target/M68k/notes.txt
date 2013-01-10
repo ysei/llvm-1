@@ -1,4 +1,5 @@
 Need to finish implementing M68MCInstLower.
 
-Need to understand sections and how the linker deals with them.  May need to
-define our own MCSection and TargetLoweringObjectFile.
+Need to update MCSectionMPW with a better understanding of how data is stored.
+
+Triple should be m68k-apple-mac.
