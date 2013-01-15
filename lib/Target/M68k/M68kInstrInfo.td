@@ -86,6 +86,68 @@ def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
 
 //===----------------------------------------------------------------------===//
 
+multiclass BinOp<string mnemonic, SDNode op> {
+  let Constraints = "$src1 = $dst" in {
+    def ldd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, DR32:$src2),
+                       !strconcat(mnemonic, ".l\t$src2, $dst"),
+                       [(set DR32:$dst, (op DR32:$src1, DR32:$src2))]>;
+    def wdd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, DR16:$src2),
+                       !strconcat(mnemonic, ".w\t$src2, $dst"),
+                       [(set DR16:$dst, (op DR16:$src1, DR16:$src2))]>;
+    def bdd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, DR8:$src2),
+                       !strconcat(mnemonic, ".b\t$src2, $dst"),
+                       [(set DR8:$dst, (op DR8:$src1, DR8:$src2))]>;
+
+    def lmd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, mem:$src2),
+                       !strconcat(mnemonic, ".l\t$src2, $dst"),
+                       [(set DR32:$dst, (op DR32:$src1, (load addr:$src2)))]>;
+    def wmd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, mem:$src2),
+                       !strconcat(mnemonic, ".w\t$src2, $dst"),
+                       [(set DR16:$dst, (op DR16:$src1, (load addr:$src2)))]>;
+    def bmd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, mem:$src2),
+                       !strconcat(mnemonic, ".b\t$src2, $dst"),
+                       [(set DR8:$dst, (op DR8:$src1, (load addr:$src2)))]>;
+
+    def Ild : M68kInst<(outs DR32:$dst), (ins DR32:$src1, i32imm:$src2),
+                       !strconcat(mnemonic, "i.l\t$src2, $dst"),
+                       [(set DR32:$dst, (op DR32:$src1, imm:$src2))]>;
+    def Iwd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, i16imm:$src2),
+                       !strconcat(mnemonic, "i.w\t$src2, $dst"),
+                       [(set DR16:$dst, (op DR16:$src1, imm:$src2))]>;
+    def Ibd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, i8imm:$src2),
+                       !strconcat(mnemonic, "i.b\t$src2, $dst"),
+                       [(set DR8:$dst, (op DR8:$src1, imm:$src2))]>;
+  }
+
+  def ldm : M68kInst<(outs), (ins mem:$dst, DR32:$src),
+                     !strconcat(mnemonic, ".l\t$src, $dst"),
+                     [(store (op (i32 (load addr:$dst)), DR32:$src),
+                             addr:$dst)]>;
+  def wdm : M68kInst<(outs), (ins mem:$dst, DR16:$src),
+                     !strconcat(mnemonic, ".w\t$src, $dst"),
+                     [(store (op (i16 (load addr:$dst)), DR16:$src),
+                             addr:$dst)]>;
+  def bdm : M68kInst<(outs), (ins mem:$dst, DR8:$src),
+                     !strconcat(mnemonic, ".b\t$src, $dst"),
+                     [(store (op (i8 (load addr:$dst)), DR8:$src),
+                             addr:$dst)]>;
+
+  def Ilm : M68kInst<(outs), (ins mem:$dst, i32imm:$src),
+                     !strconcat(mnemonic, "i.l\t$src, $dst"),
+                     [(store (op (i32 (load addr:$dst)), imm:$src),
+                             addr:$dst)]>;
+  def Iwm : M68kInst<(outs), (ins mem:$dst, i16imm:$src),
+                     !strconcat(mnemonic, "i.w\t$src, $dst"),
+                     [(store (op (i16 (load addr:$dst)), imm:$src),
+                             addr:$dst)]>;
+  def Ibm : M68kInst<(outs), (ins mem:$dst, i8imm:$src),
+                     !strconcat(mnemonic, "i.b\t$src, $dst"),
+                     [(store (op (i8 (load addr:$dst)), imm:$src),
+                             addr:$dst)]>;
+}
+
+defm AND : BinOp<"and", and>;
+
 let Constraints = "$srca = $dst" in {
 def ADDldd : M68kInst<(outs DR32:$dst), (ins DR32:$srca, DR32:$srcb),
                       "add.w\t$srcb, $dst",

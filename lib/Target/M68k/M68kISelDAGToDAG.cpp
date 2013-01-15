@@ -61,6 +61,8 @@ SDNode *M68kDAGToDAGISel::Select(SDNode *Node) {
 
 bool M68kDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
                                   SDValue &Offset) {
+  DEBUG(dbgs() << "SelectAddr\n");
+  DEBUG(Addr->dump());
   EVT ValTy = Addr.getValueType();
 
   // Frame index matcher
@@ -71,7 +73,9 @@ bool M68kDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
   }
 
   // TODO other memory matching
-  return false;
+  Base = Addr;
+  Offset = CurDAG->getTargetConstant(0, MVT::i16);
+  return true;
 }
 
 FunctionPass *llvm::createM68kISelDag(M68kTargetMachine &TM) {

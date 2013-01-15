@@ -57,7 +57,10 @@ void M68kInstPrinter::printMemOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand Disp = MI->getOperand(OpNo + 1);
   assert(Base.isReg() && Disp.isImm());
 
-  O << Disp.getImm() << "(";
+  if (uint64_t imm = Disp.getImm()) {
+    O << imm;
+  }
+  O << "(";
   printRegName(O, Base.getReg());
   O << ")";
 }
