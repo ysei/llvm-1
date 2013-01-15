@@ -35,6 +35,11 @@ namespace llvm {
                              MachineBasicBlock::iterator MI, DebugLoc DL,
                              unsigned DestReg, unsigned SrcReg,
                              bool KillSrc) const;
+
+    virtual bool expandPostRAPseudo(MachineBasicBlock::iterator MI) const;
+
+  private:
+    bool expandSext(MachineBasicBlock::iterator MI) const;
   };
 } // end namespace llvm
 

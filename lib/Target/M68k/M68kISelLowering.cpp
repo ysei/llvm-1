@@ -28,6 +28,17 @@ M68kTargetLowering::M68kTargetLowering(M68kTargetMachine &TM)
   addRegisterClass(MVT::i16, &M68k::DR16RegClass);
   addRegisterClass(MVT::i32, &M68k::DR32RegClass);
   computeRegisterProperties();
+
+  // We have no extending loads.
+  for (unsigned ExtType = (unsigned)ISD::EXTLOAD;
+       ExtType < (unsigned)ISD::LAST_LOADEXT_TYPE; ++ExtType) {
+    // TODO(kwaters): What about i1 and float?
+    setLoadExtAction(ExtType, MVT::i8, Expand);
+    setLoadExtAction(ExtType, MVT::i16, Expand);
+    setLoadExtAction(ExtType, MVT::i32, Expand);
+  }
+
+  // TODO(kwaters): Truncating stores should be supported.
 }
 
 
