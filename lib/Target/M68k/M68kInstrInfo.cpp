@@ -35,23 +35,33 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MI, DebugLoc DL,
                                 unsigned DestReg, unsigned SrcReg,
                                 bool KillSrc) const {
-  if (M68k::DR16RegClass.contains(DestReg, SrcReg)) {
-    // TODO what is all this extra stuff
-    BuildMI(MBB, MI, DL, get(M68k::MOV16dd), DestReg)
-      .addReg(SrcReg, getKillRegState(KillSrc));
-    return;
-  }
-  if (M68k::DR8RegClass.contains(DestReg, SrcReg)) {
-    // TODO what is all this extra stuff
-    BuildMI(MBB, MI, DL, get(M68k::MOV8dd), DestReg)
-      .addReg(SrcReg, getKillRegState(KillSrc));
-    return;
+  unsigned Opcode = 0;
+  if (M68k::DR8RegClass.contains(DestReg, SrcReg))
+    Opcode = M68k::MOV8dd;
+  else if (M68k::DR16RegClass.contains(DestReg, SrcReg))
+    Opcode = M68k::MOV16dd;
+  else if (M68k::DR32RegClass.contains(DestReg)) {
+    if (M68k::DR32RegClass.contains(SrcReg))
+      Opcode = M68k::MOV32dd;
+    else if (M68k::ARRegClass.contains(SrcReg))
+      Opcode = M68k::MOV32ad;
+  } else if (M68k::ARRegClass.contains(DestReg)) {
+    if (M68k::DR32RegClass.contains(SrcReg))
+      Opcode = M68k::MOVEA32d;
+    else if (M68k::ARRegClass.contains(SrcReg))
+      Opcode = M68k::MOVEA32a;
   }
 
-  dbgs() << DestReg << " <- " << SrcReg;
+  // TODO(kwaters): status register
 
-  // TODO
-  llvm_unreachable("HACK");
+  if (!Opcode) {
+    DEBUG(dbgs() << "Cannot copy " << RI.getName(SrcReg) << " to "
+                 << RI.getName(DestReg) << '\n');
+    llvm_unreachable("Failed to copy pysreg");
+  }
+
+  BuildMI(MBB, MI, DL, get(Opcode), DestReg)
+    .addReg(SrcReg, getKillRegState(KillSrc));
 }
 
 bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {

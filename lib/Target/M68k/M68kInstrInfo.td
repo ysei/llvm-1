@@ -41,8 +41,22 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
 //
 //===----------------------------------------------------------------------===//
 
+// Register-Register moves
 def MOV32dd : M68kInst<(outs DR32:$dst), (ins DR32:$src),
                        "move.l\t$src, $dst", []>;
+def MOV16dd : M68kInst<(outs DR16:$dst), (ins DR16:$src),
+                      "move.w\t$src, $dst", []>;
+def MOV8dd : M68kInst<(outs DR8:$dst), (ins DR8:$src),
+                     "move.b\t$src, $dst", []>;
+def MOVEA32a : M68kInst<(outs AR:$dst), (ins AR:$src),
+                        "movea.l\t$src, $dst", []>;
+
+def MOV32ad : M68kInst<(outs DR32:$dst), (ins AR:$src),
+                       "move.l\t$src, $dst", []>;
+def MOVEA32d : M68kInst<(outs AR:$dst), (ins DR32:$src),
+                        "movea.l\t$src, $dst", []>;
+
+//===----------------------------------------------------------------------===//
 
 def MOVEQ : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
                      "moveq\t$src, $dst",
@@ -52,6 +66,10 @@ def MOV32id : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
                        "move.l\t$src, $dst",
                        [(set DR32:$dst, imm:$src)]>;
 
+def MOV32md : M68kInst<(outs DR32:$dst), (ins mem:$src),
+                       "move.l\t$src, $dst",
+                       [(set DR32:$dst, (load addr:$src))]>;
+
 def MOV16md : M68kInst<(outs DR16:$dst), (ins mem:$src),
                        "move.w\t$src, $dst",
                        [(set DR16:$dst, (load addr:$src))]>;
@@ -59,11 +77,6 @@ def MOV16md : M68kInst<(outs DR16:$dst), (ins mem:$src),
 def MOV16id : M68kInst<(outs DR16:$dst), (ins i16imm:$src),
                        "move.w\t$src, $dst",
                        [(set DR16:$dst, imm:$src)]>;
-
-def MOV16dd : M68kInst<(outs DR16:$dst), (ins DR16:$src),
-                      "move.w\t$src, $dst", []>;
-def MOV8dd : M68kInst<(outs DR8:$dst), (ins DR8:$src),
-                     "move.b\t$src, $dst", []>;
 
 def MOV8md : M68kInst<(outs DR8:$dst), (ins mem:$src),
                        "move.b\t$src, $dst",
