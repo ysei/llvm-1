@@ -25,7 +25,7 @@ def M68kretflag : SDNode<"M68kISD::RET_FLAG", SDTNone,
 // selection.
 def simm16 : Operand<i32>;
 
-// TODO match all types of memory based EAs (effictive addresses).
+// TODO match all types of memory based EAs (effective addresses).
 def mem : Operand<i32> {
   let MIOperandInfo = (ops AR, simm16);
   let PrintMethod = "printMemOperand";
@@ -42,19 +42,19 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
 //===----------------------------------------------------------------------===//
 
 // Register-Register moves (unselectable)
-def MOV32dd : M68kInst<(outs DR32:$dst), (ins DR32:$src),
+def MOVEldd : M68kInst<(outs DR32:$dst), (ins DR32:$src),
                        "move.l\t$src, $dst", []>;
-def MOV16dd : M68kInst<(outs DR16:$dst), (ins DR16:$src),
-                      "move.w\t$src, $dst", []>;
-def MOV8dd : M68kInst<(outs DR8:$dst), (ins DR8:$src),
-                     "move.b\t$src, $dst", []>;
-def MOVEA32a : M68kInst<(outs AR:$dst), (ins AR:$src),
-                        "movea.l\t$src, $dst", []>;
+def MOVEwdd : M68kInst<(outs DR16:$dst), (ins DR16:$src),
+                       "move.w\t$src, $dst", []>;
+def MOVEbdd : M68kInst<(outs DR8:$dst), (ins DR8:$src),
+                       "move.b\t$src, $dst", []>;
+def MOVEAla : M68kInst<(outs AR:$dst), (ins AR:$src),
+                       "movea.l\t$src, $dst", []>;
 
-def MOV32ad : M68kInst<(outs DR32:$dst), (ins AR:$src),
+def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
                        "move.l\t$src, $dst", []>;
-def MOVEA32d : M68kInst<(outs AR:$dst), (ins DR32:$src),
-                        "movea.l\t$src, $dst", []>;
+def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
+                       "movea.l\t$src, $dst", []>;
 
 // Selectable moves
 multiclass M68kMoveInst<ValueType vt, string size, RegisterClass reg,
@@ -85,37 +85,37 @@ def MOVEQ : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
                      "moveq\t$src, $dst",
                      [(set DR32:$dst, immQ:$src)]>;
 
-defm MOV8 : M68kMoveInst<i8, "b", DR8, i8imm>;
-defm MOV16 : M68kMoveInst<i16, "w", DR16, i16imm>;
-defm MOV32 : M68kMoveInst<i32, "l", DR32, i32imm>;
+defm MOVEb : M68kMoveInst<i8, "b", DR8, i8imm>;
+defm MOVEw : M68kMoveInst<i16, "w", DR16, i16imm>;
+defm MOVEl : M68kMoveInst<i32, "l", DR32, i32imm>;
 
-// TODO(kwaters): MOVEA32m MOVEA32i
+// TODO(kwaters): MOVEAlm MOVEAli
 // TODO(kwaters): MOVEM
 // TODO(kwaters): MOVEP
 
 //===----------------------------------------------------------------------===//
 
 let Constraints = "$srca = $dst" in {
-def ADD32dd : M68kInst<(outs DR32:$dst), (ins DR32:$srca, DR32:$srcb),
-                       "add.w\t$srcb, $dst",
-                       [(set DR32:$dst, (add DR32:$srca, DR32:$srcb))]>;
+def ADDldd : M68kInst<(outs DR32:$dst), (ins DR32:$srca, DR32:$srcb),
+                      "add.w\t$srcb, $dst",
+                      [(set DR32:$dst, (add DR32:$srca, DR32:$srcb))]>;
 
-def ADD16dd : M68kInst<(outs DR16:$dst), (ins DR16:$srca, DR16:$srcb),
-                       "add.w\t$srcb, $dst",
-                       [(set DR16:$dst, (add DR16:$srca, DR16:$srcb))]>;
-def ADD16md : M68kInst<(outs DR16:$dst), (ins DR16:$srca, mem:$srcb),
-                        "add.w\t$srcb, $dst",
-                        [(set DR16:$dst, (add DR16:$srca,
-                                              (load addr:$srcb)))]>;
+def ADDwdd : M68kInst<(outs DR16:$dst), (ins DR16:$srca, DR16:$srcb),
+                      "add.w\t$srcb, $dst",
+                      [(set DR16:$dst, (add DR16:$srca, DR16:$srcb))]>;
+def ADDwmd : M68kInst<(outs DR16:$dst), (ins DR16:$srca, mem:$srcb),
+                      "add.w\t$srcb, $dst",
+                      [(set DR16:$dst, (add DR16:$srca,
+                                       (load addr:$srcb)))]>;
 
-def ADD8dd : M68kInst<(outs DR8:$dst), (ins DR8:$srca, DR8:$srcb),
+def ADDbdd : M68kInst<(outs DR8:$dst), (ins DR8:$srca, DR8:$srcb),
                       "add.b\t$srcb, $dst",
                       [(set DR8:$dst, (add DR8:$srca, DR8:$srcb))]>;
 
 // TODO limit this immediate to 16 bits.
-def ADD16id : M68kInst<(outs DR16:$dst), (ins DR16:$srca, i16imm:$srcb),
-                       "addi.w\t$srcb, $dst",
-                       [(set DR16:$dst, (add DR16:$srca, imm:$srcb))]>;
+def ADDwid : M68kInst<(outs DR16:$dst), (ins DR16:$srca, i16imm:$srcb),
+                      "addi.w\t$srcb, $dst",
+                      [(set DR16:$dst, (add DR16:$srca, imm:$srcb))]>;
 }
 
 // TODO look at how X86 does its reg->mem binops.
@@ -137,20 +137,20 @@ def : Pat<(i32 (zext DR16:$src)),
 // we have any gaurentee that the register allocator will tend to put the src
 // and dst in the same physical register?
 let isPseudo = 1 in {
-def EXT16_PSEUDO : M68kInst<(outs DR16:$dst), (ins DR8:$src),
-                            "PSEUDO ext.w\t$src, $dst",
-                            [(set DR16:$dst, (sext DR8:$src))]>;
-def EXTB32_PSEUDO : M68kInst<(outs DR32:$dst), (ins DR8:$src),
-                             "PSEUDO extb.l\t$src, $dst",
-                             [(set DR32:$dst, (sext DR8:$src))]>;
-def EXT32_PSEUDO : M68kInst<(outs DR32:$dst), (ins DR16:$src),
-                            "PSEUDO ext.l\t$src, $dst",
-                            [(set DR32:$dst, (sext DR16:$src))]>;
+def EXTw_PSEUDO : M68kInst<(outs DR16:$dst), (ins DR8:$src),
+                           "PSEUDO ext.w\t$src, $dst",
+                           [(set DR16:$dst, (sext DR8:$src))]>;
+def EXTBl_PSEUDO : M68kInst<(outs DR32:$dst), (ins DR8:$src),
+                            "PSEUDO extb.l\t$src, $dst",
+                            [(set DR32:$dst, (sext DR8:$src))]>;
+def EXTl_PSEUDO : M68kInst<(outs DR32:$dst), (ins DR16:$src),
+                           "PSEUDO ext.l\t$src, $dst",
+                           [(set DR32:$dst, (sext DR16:$src))]>;
 }
 
 // Acutal sign extending opcodes.
-def EXT32 : M68kInst<(outs DR32:$dst), (ins), "ext.l\t$dst", []>;
-def EXT16 : M68kInst<(outs DR16:$dst), (ins), "ext.w\t$dst", []>;
+def EXTl : M68kInst<(outs DR32:$dst), (ins), "ext.l\t$dst", []>;
+def EXTw : M68kInst<(outs DR16:$dst), (ins), "ext.w\t$dst", []>;
 
 // TODO(kwaters): anyext
 

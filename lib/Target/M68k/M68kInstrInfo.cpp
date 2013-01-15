@@ -37,19 +37,19 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 bool KillSrc) const {
   unsigned Opcode = 0;
   if (M68k::DR8RegClass.contains(DestReg, SrcReg))
-    Opcode = M68k::MOV8dd;
+    Opcode = M68k::MOVEbdd;
   else if (M68k::DR16RegClass.contains(DestReg, SrcReg))
-    Opcode = M68k::MOV16dd;
+    Opcode = M68k::MOVEwdd;
   else if (M68k::DR32RegClass.contains(DestReg)) {
     if (M68k::DR32RegClass.contains(SrcReg))
-      Opcode = M68k::MOV32dd;
+      Opcode = M68k::MOVEldd;
     else if (M68k::ARRegClass.contains(SrcReg))
-      Opcode = M68k::MOV32ad;
+      Opcode = M68k::MOVElad;
   } else if (M68k::ARRegClass.contains(DestReg)) {
     if (M68k::DR32RegClass.contains(SrcReg))
-      Opcode = M68k::MOVEA32d;
+      Opcode = M68k::MOVEAld;
     else if (M68k::ARRegClass.contains(SrcReg))
-      Opcode = M68k::MOVEA32a;
+      Opcode = M68k::MOVEAla;
   }
 
   // TODO(kwaters): status register
@@ -71,20 +71,20 @@ bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
 
   switch (MI->getOpcode()) {
   default: llvm_unreachable("Bad sign extension");
-  case M68k::EXT16_PSEUDO:
+  case M68k::EXTw_PSEUDO:
     SubReg = M68k::sub_byte;
-    MoveOp = M68k::MOV8dd;
-    ExtOp = M68k::EXT16;
+    MoveOp = M68k::MOVEbdd;
+    ExtOp = M68k::EXTw;
     break;
-  case M68k::EXTB32_PSEUDO:
+  case M68k::EXTBl_PSEUDO:
     SubReg = M68k::sub_byte;
-    MoveOp = M68k::MOV8dd;
-    ExtOp = M68k::EXT32;
+    MoveOp = M68k::MOVEbdd;
+    ExtOp = M68k::EXTl;
     break;
-  case M68k::EXT32_PSEUDO:
+  case M68k::EXTl_PSEUDO:
     SubReg = M68k::sub_word;
-    MoveOp = M68k::MOV16dd;
-    ExtOp = M68k::EXT32;
+    MoveOp = M68k::MOVEwdd;
+    ExtOp = M68k::EXTl;
     break;
   }
 
@@ -103,12 +103,12 @@ bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
   }
   assert(MI->getOperand(1).isKill() && "Overwritiing non-killed register.");
 
-  if (MI->getOpcode() == M68k::EXTB32_PSEUDO) {
+  if (MI->getOpcode() == M68k::EXTBl_PSEUDO) {
     // TODO(kwaters): If this is 68020+ use EXTB.L.
     // M68000 doesn't have the EXTB.L instruction, so cascade EXT.W and
     // EXT.L.
     unsigned Middle = RI.getSubReg(Dst, M68k::sub_word);
-    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(M68k::EXT16), Middle)
+    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(M68k::EXTw), Middle)
       .addReg(Src, RegState::Implicit | RegState::Kill);
     MI->getOperand(1).setReg(Middle);
   }
@@ -121,9 +121,9 @@ bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
 bool M68kInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
   switch (MI->getOpcode()) {
   default: break;
-  case M68k::EXT16_PSEUDO:
-  case M68k::EXTB32_PSEUDO:
-  case M68k::EXT32_PSEUDO:
+  case M68k::EXTw_PSEUDO:
+  case M68k::EXTBl_PSEUDO:
+  case M68k::EXTl_PSEUDO:
     return expandSext(MI);
   }
 
