@@ -42,43 +42,26 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
 //===----------------------------------------------------------------------===//
 
 // Register-Register moves (unselectable)
-def MOVEldd : M68kInst<(outs DR32:$dst), (ins DR32:$src),
-                       "move.l\t$src, $dst", []>;
-def MOVEwdd : M68kInst<(outs DR16:$dst), (ins DR16:$src),
-                       "move.w\t$src, $dst", []>;
-def MOVEbdd : M68kInst<(outs DR8:$dst), (ins DR8:$src),
-                       "move.b\t$src, $dst", []>;
-def MOVEAla : M68kInst<(outs AR:$dst), (ins AR:$src),
-                       "movea.l\t$src, $dst", []>;
 
-def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
-                       "move.l\t$src, $dst", []>;
-def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
-                       "movea.l\t$src, $dst", []>;
-
-// Selectable moves
 multiclass M68kMoveInst<ValueType vt, string size, RegisterClass reg,
                         Operand immop> {
-  def id : M68kInst<(outs reg:$dst),(ins immop:$src),
-                    !strconcat("move.", size, "\t$src, $dst"),
-                    [(set reg:$dst, imm:$src)]>;
-  def md : M68kInst<(outs reg:$dst), (ins mem:$src),
-                    !strconcat("move.", size, "\t$src, $dst"),
-                    [(set reg:$dst, (load addr:$src))]>;
+  let AsmString = !strconcat("move.", size, "\t$src, $dst") in {
+    def dd : M68kInst<(outs reg:$dst), (ins reg:$src), "", []>;
+    def id : M68kInst<(outs reg:$dst),(ins immop:$src), "",
+                      [(set reg:$dst, imm:$src)]>;
+    def md : M68kInst<(outs reg:$dst), (ins mem:$src), "",
+                      [(set reg:$dst, (load addr:$src))]>;
 
-  def im : M68kInst<(outs), (ins mem:$dst, immop:$src),
-                    !strconcat("move.", size, "\t$src, $dst"),
-                    [(store (vt imm:$src), addr:$dst)]>;
-  def dm : M68kInst<(outs), (ins mem:$dst, reg:$src),
-                    !strconcat("move.", size, "\t$src, $dst"),
-                    [(store reg:$src, addr:$dst)]>;
+    def im : M68kInst<(outs), (ins mem:$dst, immop:$src), "",
+                      [(store (vt imm:$src), addr:$dst)]>;
+    def dm : M68kInst<(outs), (ins mem:$dst, reg:$src), "",
+                      [(store reg:$src, addr:$dst)]>;
+    def mm : M68kInst<(outs), (ins mem:$dst, mem:$src), "",
+                      [(store (vt (load addr:$src)), addr:$dst)]>;
 
-  def mm : M68kInst<(outs), (ins mem:$dst, mem:$src),
-                    !strconcat("move.", size, "\t$src, $dst"),
-                    [(store (vt (load addr:$src)), addr:$dst)]>;
-
-  // TODO(kwaters): am, ad flavors including truncation, I'm not sure it can be
-  // selected automatically.
+    // TODO(kwaters): am, ad flavors including truncation, I'm not sure it can
+    // be selected automatically.
+  }
 }
 
 def MOVEQ : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
@@ -88,6 +71,14 @@ def MOVEQ : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
 defm MOVEb : M68kMoveInst<i8, "b", DR8, i8imm>;
 defm MOVEw : M68kMoveInst<i16, "w", DR16, i16imm>;
 defm MOVEl : M68kMoveInst<i32, "l", DR32, i32imm>;
+
+// A register moves for copyPhysReg
+def MOVEAla : M68kInst<(outs AR:$dst), (ins AR:$src),
+                       "movea.l\t$src, $dst", []>;
+def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
+                       "move.l\t$src, $dst", []>;
+def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
+                       "movea.l\t$src, $dst", []>;
 
 // TODO(kwaters): MOVEAlm MOVEAli
 // TODO(kwaters): MOVEM
