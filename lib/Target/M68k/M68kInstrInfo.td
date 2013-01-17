@@ -34,8 +34,34 @@ def mem : Operand<i32> {
 // Pattern for immediates for "quick" instructions.
 def immQ : ImmLeaf<i32, [{ return isInt<8>(Imm); }]>;
 
+def i32imm1_8 : ImmLeaf<i32, [{ return 1 <= Imm && Imm <= 8; }]>;
+def i16imm1_8 : ImmLeaf<i16, [{ return 1 <= Imm && Imm <= 8; }]>;
+def i8imm1_8  : ImmLeaf<i8,  [{ return 1 <= Imm && Imm <= 8; }]>;
+
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
                           [SDNPWantParent]>;
+
+class SizeInfo<ValueType vt, string asmflag, RegisterClass regclass,
+               Operand immoperand, SDPatternOperator quickimm> {
+  // VT - Value type this size represents.
+  ValueType VT = vt;
+
+  // AsmFlag - Assembler mnemonic flag.
+  string AsmFlag = asmflag;
+
+  // Register class for this size.
+  RegisterClass RegClass = regclass;
+
+  // ImmOperand - Immediate value for the type.
+  Operand ImmOperand = immoperand;
+
+  // QuickImm - Immediate operator for quick add/sub.
+  SDPatternOperator QuickImm = quickimm;
+}
+
+def SizeL : SizeInfo<i32, ".l", DR32, i32imm, i32imm1_8>;
+def SizeW : SizeInfo<i16, ".w", DR16, i16imm, i16imm1_8>;
+def SizeB : SizeInfo<i8,  ".b", DR8,  i8imm,  i8imm1_8>;
 
 //===----------------------------------------------------------------------===//
 // MOVE (all flavors)
@@ -80,98 +106,101 @@ def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
 def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
                        "movea.l\t$src, $dst", []>;
 
+// TODO(kwaters): rename MOVEAld to MOVElad, etc.
 // TODO(kwaters): MOVEAlm MOVEAli
 // TODO(kwaters): MOVEM
 // TODO(kwaters): MOVEP
 
 //===----------------------------------------------------------------------===//
 
+let Constraints = "$src1 = $dst" in {
+class BinOp_DD<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, sz.RegClass:$src2),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst,
+                   (op sz.RegClass:$src1, sz.RegClass:$src2))]>;
+
+class BinOp_MD<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, mem:$src2),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst,
+                   (op sz.RegClass:$src1, (load addr:$src2)))]>;
+
+class BinOp_ID<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst),
+             (ins sz.RegClass:$src1, sz.ImmOperand:$src2),
+             !strconcat(mnemonic, "i", sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, imm:$src2))]>;
+
+class BinOp_QD<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst),
+             (ins sz.RegClass:$src1, sz.ImmOperand:$src2),
+             !strconcat(mnemonic, "q", sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst,
+                   (op sz.RegClass:$src1, sz.QuickImm:$src2))]>;
+}
+
+class BinOp_DM<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs), (ins mem:$dst, sz.RegClass:$src),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$src, $dst"),
+             [(store (op (sz.VT (load addr:$dst)), sz.RegClass:$src),
+                     addr:$dst)]>;
+
+class BinOp_IM<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs), (ins mem:$dst, sz.ImmOperand:$src),
+             !strconcat(mnemonic, "i", sz.AsmFlag, "\t$src, $dst"),
+             [(store (op (sz.VT (load addr:$dst)), imm:$src), addr:$dst)]>;
+
+class BinOp_QM<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs), (ins mem:$dst, sz.ImmOperand:$src),
+             !strconcat(mnemonic, "q", sz.AsmFlag, "\t$src, $dst"),
+             [(store (op (sz.VT (load addr:$dst)), sz.QuickImm:$src),
+                     addr:$dst)]>;
+
 multiclass BinOp<string mnemonic, SDNode op> {
-  let Constraints = "$src1 = $dst" in {
-    def ldd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, DR32:$src2),
-                       !strconcat(mnemonic, ".l\t$src2, $dst"),
-                       [(set DR32:$dst, (op DR32:$src1, DR32:$src2))]>;
-    def wdd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, DR16:$src2),
-                       !strconcat(mnemonic, ".w\t$src2, $dst"),
-                       [(set DR16:$dst, (op DR16:$src1, DR16:$src2))]>;
-    def bdd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, DR8:$src2),
-                       !strconcat(mnemonic, ".b\t$src2, $dst"),
-                       [(set DR8:$dst, (op DR8:$src1, DR8:$src2))]>;
+  def ldd : BinOp_DD<SizeL, mnemonic, op>;
+  def wdd : BinOp_DD<SizeW, mnemonic, op>;
+  def bdd : BinOp_DD<SizeB, mnemonic, op>;
+  def lmd : BinOp_MD<SizeL, mnemonic, op>;
+  def wmd : BinOp_MD<SizeW, mnemonic, op>;
+  def bmd : BinOp_MD<SizeB, mnemonic, op>;
+  def lid : BinOp_ID<SizeL, mnemonic, op>;
+  def wid : BinOp_ID<SizeW, mnemonic, op>;
+  def bid : BinOp_ID<SizeB, mnemonic, op>;
+  def ldm : BinOp_DM<SizeL, mnemonic, op>;
+  def wdm : BinOp_DM<SizeW, mnemonic, op>;
+  def bdm : BinOp_DM<SizeB, mnemonic, op>;
+  def lim : BinOp_IM<SizeL, mnemonic, op>;
+  def wim : BinOp_IM<SizeW, mnemonic, op>;
+  def bim : BinOp_IM<SizeB, mnemonic, op>;
+}
 
-    def lmd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, mem:$src2),
-                       !strconcat(mnemonic, ".l\t$src2, $dst"),
-                       [(set DR32:$dst, (op DR32:$src1, (load addr:$src2)))]>;
-    def wmd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, mem:$src2),
-                       !strconcat(mnemonic, ".w\t$src2, $dst"),
-                       [(set DR16:$dst, (op DR16:$src1, (load addr:$src2)))]>;
-    def bmd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, mem:$src2),
-                       !strconcat(mnemonic, ".b\t$src2, $dst"),
-                       [(set DR8:$dst, (op DR8:$src1, (load addr:$src2)))]>;
+multiclass BinOpAdd<string mnemonic, SDNode op> : BinOp<mnemonic, op> {
+  def lqd : BinOp_QD<SizeL, mnemonic, op>;
+  def wqd : BinOp_QD<SizeW, mnemonic, op>;
+  def bqd : BinOp_QD<SizeB, mnemonic, op>;
+  def lqm : BinOp_QM<SizeL, mnemonic, op>;
+  def wqm : BinOp_QM<SizeW, mnemonic, op>;
+  def bqm : BinOp_QM<SizeB, mnemonic, op>;
 
-    def Ild : M68kInst<(outs DR32:$dst), (ins DR32:$src1, i32imm:$src2),
-                       !strconcat(mnemonic, "i.l\t$src2, $dst"),
-                       [(set DR32:$dst, (op DR32:$src1, imm:$src2))]>;
-    def Iwd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, i16imm:$src2),
-                       !strconcat(mnemonic, "i.w\t$src2, $dst"),
-                       [(set DR16:$dst, (op DR16:$src1, imm:$src2))]>;
-    def Ibd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, i8imm:$src2),
-                       !strconcat(mnemonic, "i.b\t$src2, $dst"),
-                       [(set DR8:$dst, (op DR8:$src1, imm:$src2))]>;
-  }
+  // TODO(kwaters): ADDA and SUBA opcodes, forms AA DA IA MA.  These forms
+  // can't be selected, because they conflict with the D forms.  However,
+  // it might be possible to pair them with the D forms.  In the "word" forms
+  // they include the sign extension of the source before adding/subtracting.
 
-  def ldm : M68kInst<(outs), (ins mem:$dst, DR32:$src),
-                     !strconcat(mnemonic, ".l\t$src, $dst"),
-                     [(store (op (i32 (load addr:$dst)), DR32:$src),
-                             addr:$dst)]>;
-  def wdm : M68kInst<(outs), (ins mem:$dst, DR16:$src),
-                     !strconcat(mnemonic, ".w\t$src, $dst"),
-                     [(store (op (i16 (load addr:$dst)), DR16:$src),
-                             addr:$dst)]>;
-  def bdm : M68kInst<(outs), (ins mem:$dst, DR8:$src),
-                     !strconcat(mnemonic, ".b\t$src, $dst"),
-                     [(store (op (i8 (load addr:$dst)), DR8:$src),
-                             addr:$dst)]>;
-
-  def Ilm : M68kInst<(outs), (ins mem:$dst, i32imm:$src),
-                     !strconcat(mnemonic, "i.l\t$src, $dst"),
-                     [(store (op (i32 (load addr:$dst)), imm:$src),
-                             addr:$dst)]>;
-  def Iwm : M68kInst<(outs), (ins mem:$dst, i16imm:$src),
-                     !strconcat(mnemonic, "i.w\t$src, $dst"),
-                     [(store (op (i16 (load addr:$dst)), imm:$src),
-                             addr:$dst)]>;
-  def Ibm : M68kInst<(outs), (ins mem:$dst, i8imm:$src),
-                     !strconcat(mnemonic, "i.b\t$src, $dst"),
-                     [(store (op (i8 (load addr:$dst)), imm:$src),
-                             addr:$dst)]>;
+  // TODO(kwaters): ADDQ #-1 can be converted to SUBQ #1.  Does it make sense
+  // to do this conversion during lowering or during instruction selection?
+  // How about as a post selection peep-hole?
 }
 
 defm AND : BinOp<"and", and>;
+defm EOR : BinOp<"eor", xor>;
+defm OR : BinOp<"or", or>;
 
-let Constraints = "$srca = $dst" in {
-def ADDldd : M68kInst<(outs DR32:$dst), (ins DR32:$srca, DR32:$srcb),
-                      "add.w\t$srcb, $dst",
-                      [(set DR32:$dst, (add DR32:$srca, DR32:$srcb))]>;
+defm ADD : BinOpAdd<"add", add>;
+defm SUB : BinOpAdd<"sub", sub>;
 
-def ADDwdd : M68kInst<(outs DR16:$dst), (ins DR16:$srca, DR16:$srcb),
-                      "add.w\t$srcb, $dst",
-                      [(set DR16:$dst, (add DR16:$srca, DR16:$srcb))]>;
-def ADDwmd : M68kInst<(outs DR16:$dst), (ins DR16:$srca, mem:$srcb),
-                      "add.w\t$srcb, $dst",
-                      [(set DR16:$dst, (add DR16:$srca,
-                                       (load addr:$srcb)))]>;
-
-def ADDbdd : M68kInst<(outs DR8:$dst), (ins DR8:$srca, DR8:$srcb),
-                      "add.b\t$srcb, $dst",
-                      [(set DR8:$dst, (add DR8:$srca, DR8:$srcb))]>;
-
-// TODO limit this immediate to 16 bits.
-def ADDwid : M68kInst<(outs DR16:$dst), (ins DR16:$srca, i16imm:$srcb),
-                      "addi.w\t$srcb, $dst",
-                      [(set DR16:$dst, (add DR16:$srca, imm:$srcb))]>;
-}
-
-// TODO look at how X86 does its reg->mem binops.
+// TODO(kwaters): shifts, bit manipulating instructions.
 
 //===----------------------------------------------------------------------===//
 // Extension
