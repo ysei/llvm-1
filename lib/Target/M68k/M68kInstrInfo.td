@@ -99,12 +99,17 @@ defm MOVEw : M68kMoveInst<i16, "w", DR16, i16imm>;
 defm MOVEl : M68kMoveInst<i32, "l", DR32, i32imm>;
 
 // A register moves for copyPhysReg
-def MOVEAla : M68kInst<(outs AR:$dst), (ins AR:$src),
+def MOVElaa : M68kInst<(outs AR:$dst), (ins AR:$src),
                        "movea.l\t$src, $dst", []>;
 def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
                        "move.l\t$src, $dst", []>;
-def MOVEAld : M68kInst<(outs AR:$dst), (ins DR32:$src),
+def MOVElda : M68kInst<(outs AR:$dst), (ins DR32:$src),
                        "movea.l\t$src, $dst", []>;
+
+def MOVElam : M68kInst<(outs), (ins mem:$dst, AR:$src),
+                       "move.l\t$src, $dst", []>;
+def MOVElma : M68kInst<(outs AR:$dst), (ins mem:$src),
+                       "move.l\t$src, $dst", []>;
 
 // TODO(kwaters): rename MOVEAld to MOVElad, etc.
 // TODO(kwaters): MOVEAlm MOVEAli

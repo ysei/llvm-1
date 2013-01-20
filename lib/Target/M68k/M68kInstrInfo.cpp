@@ -47,9 +47,9 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       Opcode = M68k::MOVElad;
   } else if (M68k::ARRegClass.contains(DestReg)) {
     if (M68k::DR32RegClass.contains(SrcReg))
-      Opcode = M68k::MOVEAld;
+      Opcode = M68k::MOVElda;
     else if (M68k::ARRegClass.contains(SrcReg))
-      Opcode = M68k::MOVEAla;
+      Opcode = M68k::MOVElaa;
   }
 
   // TODO(kwaters): status register
@@ -62,6 +62,55 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
   BuildMI(MBB, MI, DL, get(Opcode), DestReg)
     .addReg(SrcReg, getKillRegState(KillSrc));
+}
+
+void M68kInstrInfo::
+storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                    unsigned SrcReg, bool isKill, int FrameIndex,
+                    const TargetRegisterClass *RC,
+                    const TargetRegisterInfo *TRI) const {
+  DebugLoc DL;
+  if (MI != MBB.end()) DL = MI->getDebugLoc();
+
+  unsigned Opcode = 0;
+  if (RC == &M68k::DR32RegClass) {
+    Opcode = M68k::MOVEldm;
+  } else if (RC == &M68k::DR16RegClass) {
+    Opcode = M68k::MOVEwdm;
+  } else if (RC == &M68k::DR8RegClass) {
+    Opcode = M68k::MOVEbdm;
+  } else {
+    assert(RC == &M68k::ARRegClass && "Called with wrong RegClass.");
+    Opcode = M68k::MOVElam;
+  }
+
+  BuildMI(MBB, MI, DL, get(Opcode))
+    .addFrameIndex(FrameIndex).addImm(0)
+    .addReg(SrcReg, getKillRegState(isKill));
+}
+
+void M68kInstrInfo::
+loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                     unsigned DestReg, int FrameIndex,
+                     const TargetRegisterClass *RC,
+                     const TargetRegisterInfo *TRI) const {
+  DebugLoc DL;
+  if (MI != MBB.end()) DL = MI->getDebugLoc();
+
+  unsigned Opcode = 0;
+  if (RC == &M68k::DR32RegClass) {
+    Opcode = M68k::MOVElmd;
+  } else if (RC == &M68k::DR16RegClass) {
+    Opcode = M68k::MOVEwmd;
+  } else if (RC == &M68k::DR8RegClass) {
+    Opcode = M68k::MOVEbmd;
+  } else {
+    assert(RC == &M68k::ARRegClass && "Called with wrong RegClass.");
+    Opcode = M68k::MOVElma;
+  }
+
+  BuildMI(MBB, MI, DL, get(Opcode), DestReg)
+    .addFrameIndex(FrameIndex).addImm(0);
 }
 
 bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
