@@ -11,7 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 def CC_M68k : CallingConv<[
-  CCIfType<[i32], CCAssignToStack<0, 0>>,
+  CCIfType<[i32, i64], CCAssignToStack<0, 0>>,
   // Bytes are passed word aligned
   CCIfType<[i8, i16], CCAssignToStack<2, 0>>
 ]>;

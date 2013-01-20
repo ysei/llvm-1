@@ -118,49 +118,58 @@ def MOVElma : M68kInst<(outs AR:$dst), (ins mem:$src),
 
 //===----------------------------------------------------------------------===//
 
+let Defs = [CCR] in {
 let Constraints = "$src1 = $dst" in {
 class BinOp_DD<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, sz.RegClass:$src2),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
              [(set sz.RegClass:$dst,
-                   (op sz.RegClass:$src1, sz.RegClass:$src2))]>;
+                   (op sz.RegClass:$src1, sz.RegClass:$src2)),
+              (implicit CCR)]>;
 
 class BinOp_MD<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, mem:$src2),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
              [(set sz.RegClass:$dst,
-                   (op sz.RegClass:$src1, (load addr:$src2)))]>;
+                   (op sz.RegClass:$src1, (load addr:$src2))),
+              (implicit CCR)]>;
 
 class BinOp_ID<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst),
              (ins sz.RegClass:$src1, sz.ImmOperand:$src2),
              !strconcat(mnemonic, "i", sz.AsmFlag, "\t$src2, $dst"),
-             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, imm:$src2))]>;
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, imm:$src2)),
+              (implicit CCR)]>;
 
 class BinOp_QD<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst),
              (ins sz.RegClass:$src1, sz.ImmOperand:$src2),
              !strconcat(mnemonic, "q", sz.AsmFlag, "\t$src2, $dst"),
              [(set sz.RegClass:$dst,
-                   (op sz.RegClass:$src1, sz.QuickImm:$src2))]>;
+                   (op sz.RegClass:$src1, sz.QuickImm:$src2)),
+              (implicit CCR)]>;
 }
 
 class BinOp_DM<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst, sz.RegClass:$src),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src, $dst"),
              [(store (op (sz.VT (load addr:$dst)), sz.RegClass:$src),
-                     addr:$dst)]>;
+                     addr:$dst),
+              (implicit CCR)]>;
 
 class BinOp_IM<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst, sz.ImmOperand:$src),
              !strconcat(mnemonic, "i", sz.AsmFlag, "\t$src, $dst"),
-             [(store (op (sz.VT (load addr:$dst)), imm:$src), addr:$dst)]>;
+             [(store (op (sz.VT (load addr:$dst)), imm:$src), addr:$dst),
+              (implicit CCR)]>;
 
 class BinOp_QM<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst, sz.ImmOperand:$src),
              !strconcat(mnemonic, "q", sz.AsmFlag, "\t$src, $dst"),
              [(store (op (sz.VT (load addr:$dst)), sz.QuickImm:$src),
-                     addr:$dst)]>;
+                     addr:$dst),
+              (implicit CCR)]>;
+}
 
 multiclass BinOp<string mnemonic, SDNode op> {
   def ldd : BinOp_DD<SizeL, mnemonic, op>;
@@ -205,7 +214,49 @@ defm OR : BinOp<"or", or>;
 defm ADD : BinOpAdd<"add", add>;
 defm SUB : BinOpAdd<"sub", sub>;
 
+def LEA : M68kInst<(outs AR:$dst), (ins mem:$src2), "lea\t$src2, $dst",
+                   [(set AR:$dst, addr:$src2)]>;
+
 // TODO(kwaters): shifts, bit manipulating instructions.
+
+//===----------------------------------------------------------------------===//
+// Extended adds and subtracts
+//===----------------------------------------------------------------------===//
+
+// We're only really intrested in selecting ADDX and SUBX in the long size.
+// Otherwise we shouldn't be doing an extended add.
+let Uses = [CCR], Defs = [CCR], Constraints = "$src1 = $dst" in {
+def ADDXldd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, DR32:$src2),
+                       "addx.l\t$src2, $dst",
+                       [(set DR32:$dst, (adde DR32:$src1, DR32:$src2)),
+                        (implicit CCR)]>;
+
+def SUBXldd : M68kInst<(outs DR32:$dst), (ins DR32:$src1, DR32:$src2),
+                       "subx.l\t$src2, $dst",
+                       [(set DR32:$dst, (sube DR32:$src1, DR32:$src2)),
+                        (implicit CCR)]>;
+
+// Other sizes are not selected.
+def ADDXwdd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, DR16:$src2),
+                       "addx.w\t$src2, $dst", []>;
+def ADDXbdd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, DR8:$src2),
+                       "addx.b\t$src2, $dst", []>;
+def SUBXwdd : M68kInst<(outs DR16:$dst), (ins DR16:$src1, DR16:$src2),
+                       "subx.w\t$src2, $dst", []>;
+def SUBXbdd : M68kInst<(outs DR8:$dst), (ins DR8:$src1, DR8:$src2),
+                       "subx.b\t$src2, $dst", []>;
+
+// TODO(kwaters): -(An), -(An) forms.
+}
+
+// addc/subc match patterns.
+// TODO(kwaters): Do we want all of the forms?  What can we do to simplify
+// them?
+def : Pat<(addc DR32:$src1, imm:$src2), (ADDlid DR32:$src1, imm:$src2)>;
+def : Pat<(addc DR32:$src1, DR32:$src2), (ADDldd DR32:$src1, DR32:$src2)>;
+def : Pat<(addc DR32:$src, (load addr:$src2)), (ADDlmd DR32:$src, addr:$src2)>;
+def : Pat<(subc DR32:$src1, DR32:$src2), (SUBldd DR32:$src1, DR32:$src2)>;
+def : Pat<(subc DR32:$src, (load addr:$src2)), (SUBlmd DR32:$src, addr:$src2)>;
 
 //===----------------------------------------------------------------------===//
 // Extension

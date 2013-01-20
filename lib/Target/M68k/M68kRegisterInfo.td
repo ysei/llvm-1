@@ -66,6 +66,7 @@ def A6 : M68kReg<6, "a6">;
 def A7 : M68kReg<7, "a7">;
 
 def PC : M68kReg<0, "pc">;
+def CCR : M68kReg<0, "ccr">;
 
 //===----------------------------------------------------------------------===//
 //  Register Classes
@@ -76,3 +77,8 @@ def DR16 : RegisterClass<"M68k", [i16], 16, (add (sequence "D%uW", 0, 7))>;
 def DR32 : RegisterClass<"M68k", [i32], 16, (add (sequence "D%uL", 0, 7))>;
 
 def AR   : RegisterClass<"M68k", [i32], 16, (add (sequence "A%u", 0, 7))>;
+
+def CR : RegisterClass<"M68k", [i8], 8, (add CCR)> {
+  let CopyCost = -1;
+  let isAllocatable = 0;
+}
