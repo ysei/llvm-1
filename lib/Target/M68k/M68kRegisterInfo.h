@@ -27,7 +27,8 @@ public:
   M68kRegisterInfo(M68kTargetMachine &TM, const TargetInstrInfo &TII);
 
   // Code generation virtual methods...
-  virtual const uint16_t *getCalleeSavedRegs(const MachineFunction *MF = 0) const;
+  virtual const uint16_t *
+    getCalleeSavedRegs(const MachineFunction *MF = 0) const;
   virtual const uint32_t *getCallPreservedMask(CallingConv::ID) const;
   virtual BitVector getReservedRegs(const MachineFunction &MF) const;
 

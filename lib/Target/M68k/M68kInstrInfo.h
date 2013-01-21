@@ -38,7 +38,8 @@ namespace llvm {
 
     virtual void storeRegToStackSlot(MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator MI,
-                                     unsigned SrcReg, bool isKill, int FrameIndex,
+                                     unsigned SrcReg, bool isKill,
+                                     int FrameIndex,
                                      const TargetRegisterClass *RC,
                                      const TargetRegisterInfo *TRI) const;
 
