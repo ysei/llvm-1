@@ -53,6 +53,7 @@ namespace llvm {
 
   private:
     bool expandSext(MachineBasicBlock::iterator MI) const;
+    bool expandRol(MachineBasicBlock::iterator MI) const;
   };
 } // end namespace llvm
 

@@ -38,6 +38,9 @@ def i32imm1_8 : ImmLeaf<i32, [{ return 1 <= Imm && Imm <= 8; }]>;
 def i16imm1_8 : ImmLeaf<i16, [{ return 1 <= Imm && Imm <= 8; }]>;
 def i8imm1_8  : ImmLeaf<i8,  [{ return 1 <= Imm && Imm <= 8; }]>;
 
+def i32imm9_15  : ImmLeaf<i32, [{ return  9 <= Imm && Imm <= 15; }]>;
+def i32imm24_31 : ImmLeaf<i32, [{ return 24 <= Imm && Imm <= 31; }]>;
+
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
                           [SDNPWantParent]>;
 
@@ -73,7 +76,7 @@ multiclass M68kMoveInst<ValueType vt, string size, RegisterClass reg,
                         Operand immop> {
   let AsmString = !strconcat("move.", size, "\t$src, $dst") in {
     def dd : M68kInst<(outs reg:$dst), (ins reg:$src), "", []>;
-    def id : M68kInst<(outs reg:$dst),(ins immop:$src), "",
+    def id : M68kInst<(outs reg:$dst), (ins immop:$src), "",
                       [(set reg:$dst, imm:$src)]>;
     def md : M68kInst<(outs reg:$dst), (ins mem:$src), "",
                       [(set reg:$dst, (load addr:$src))]>;
@@ -157,16 +160,15 @@ class BinOp_QD<SizeInfo sz, string mnemonic, SDNode op>
 // bits.
 class ShiftOp_DD<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst),
-             (ins sz.RegClass:$src1, sz.RegClass:$src2),
+             (ins sz.RegClass:$src1, DR32:$src2),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
-             [(set sz.RegClass:$dst,
-                   (op sz.RegClass:$src1, sz.RegClass:$src2)),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, DR32:$src2)),
               (implicit CCR)]>;
 
 class ShiftOp_ID<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, i32imm:$src2),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
-             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, (i32 imm:$src2))),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, i32imm1_8:$src2)),
               (implicit CCR)]>;
 } // Constrints = "$src1 = $dst"
 
@@ -265,6 +267,37 @@ def SWAPl : M68kInst<(outs DR32:$dst), (ins DR32:$src),
                      "swap.w\t$dst",
                      [(set DR32:$dst, (rotl DR32:$src, (i32 16))),
                       (implicit CCR)]>;
+
+// Shift instructions truncate the shift amount to 6 bits before shifting, so
+// we can fold a zeroextend into them.
+multiclass ShiftZext<SDNode op, RegisterClass regclass, Instruction inst> {
+    def : Pat<(op regclass:$dst, (zext DR16:$src)),
+              (inst regclass:$dst, (INSERT_SUBREG (i32 (IMPLICIT_DEF)),
+                                                  DR16:$src, sub_word))>;
+    def : Pat<(op regclass:$dst, (i32 (zext DR8:$src))),
+              (inst regclass:$dst, (INSERT_SUBREG (i32 (IMPLICIT_DEF)),
+                                                  DR8:$src, sub_byte))>;
+}
+defm : ShiftZext<shl,  DR16, LSLwdd>;
+defm : ShiftZext<shl,  DR8,  LSLbdd>;
+defm : ShiftZext<srl,  DR16, LSRwdd>;
+defm : ShiftZext<srl,  DR8,  LSRbdd>;
+defm : ShiftZext<sra,  DR16, ASRwdd>;
+defm : ShiftZext<sra,  DR8,  ASRbdd>;
+defm : ShiftZext<rotl, DR16, ROLwdd>;
+defm : ShiftZext<rotl, DR8,  ROLbdd>;
+defm : ShiftZext<rotr, DR16, RORwdd>;
+defm : ShiftZext<rotr, DR8,  RORbdd>;
+
+// Psuedo instructions for converting from ROL #imm, Dn to ROR #imm, Dn.
+let Constraints = "$src1 = $dst", isPseudo = 1 in {
+def ROLlid_PSEUDO
+  : M68kInst<(outs DR32:$dst), (ins DR32:$src1, i32imm:$src2), "",
+             [(set DR32:$dst, (rotl DR32:$src1, i32imm24_31:$src2))]>;
+def ROLwid_PSEUDO
+  : M68kInst<(outs DR16:$dst), (ins DR16:$src1, i32imm:$src2), "",
+             [(set DR16:$dst, (rotl DR16:$src1, i32imm9_15:$src2))]>;
+}
 
 // TODO(kwaters): bit manipulating instructions.
 

@@ -167,6 +167,31 @@ bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
   return true;
 }
 
+bool M68kInstrInfo::expandRol(MachineBasicBlock::iterator MI) const {
+  unsigned Size;
+  unsigned Opcode;
+
+  switch (MI->getOpcode()) {
+  default: llvm_unreachable("Bad ROL");
+  case M68k::ROLlid_PSEUDO:
+    Size = 32;
+    Opcode = M68k::RORlid;
+    break;
+  case M68k::ROLwid_PSEUDO:
+    Size = 16;
+    Opcode = M68k::RORwid;
+    break;
+  }
+
+  // Change from ROL to ROR.
+  assert(MI->getNumOperands() == 3 && "Wrong operand count");
+  MI->setDesc(get(Opcode));
+  MachineOperand &Op = MI->getOperand(2);
+  assert(Op.isImm() && "Wrong operand type");
+  Op.setImm(Size - Op.getImm());
+  return true;
+}
+
 bool M68kInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
   switch (MI->getOpcode()) {
   default: break;
@@ -174,6 +199,9 @@ bool M68kInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
   case M68k::EXTBl_PSEUDO:
   case M68k::EXTl_PSEUDO:
     return expandSext(MI);
+  case M68k::ROLlid_PSEUDO:
+  case M68k::ROLwid_PSEUDO:
+    return expandRol(MI);
   }
 
   return false;
