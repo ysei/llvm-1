@@ -116,12 +116,16 @@ def MOVElma : M68kInst<(outs AR:$dst), (ins mem:$src),
 // TODO(kwaters): MOVEM
 // TODO(kwaters): MOVEP
 
+def LEA : M68kInst<(outs AR:$dst), (ins mem:$src2), "lea\t$src2, $dst",
+                   [(set AR:$dst, addr:$src2)]>;
+
 //===----------------------------------------------------------------------===//
 
 let Defs = [CCR] in {
 let Constraints = "$src1 = $dst" in {
 class BinOp_DD<SizeInfo sz, string mnemonic, SDNode op>
-  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, sz.RegClass:$src2),
+  : M68kInst<(outs sz.RegClass:$dst),
+             (ins sz.RegClass:$src1, sz.RegClass:$src2),
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
              [(set sz.RegClass:$dst,
                    (op sz.RegClass:$src1, sz.RegClass:$src2)),
@@ -148,7 +152,23 @@ class BinOp_QD<SizeInfo sz, string mnemonic, SDNode op>
              [(set sz.RegClass:$dst,
                    (op sz.RegClass:$src1, sz.QuickImm:$src2)),
               (implicit CCR)]>;
-}
+
+// TODO(kwaters): Register class of $src2 doesn't matter, it's clipped to 6
+// bits.
+class ShiftOp_DD<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst),
+             (ins sz.RegClass:$src1, sz.RegClass:$src2),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst,
+                   (op sz.RegClass:$src1, sz.RegClass:$src2)),
+              (implicit CCR)]>;
+
+class ShiftOp_ID<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, i32imm:$src2),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, (i32 imm:$src2))),
+              (implicit CCR)]>;
+} // Constrints = "$src1 = $dst"
 
 class BinOp_DM<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst, sz.RegClass:$src),
@@ -169,7 +189,13 @@ class BinOp_QM<SizeInfo sz, string mnemonic, SDNode op>
              [(store (op (sz.VT (load addr:$dst)), sz.QuickImm:$src),
                      addr:$dst),
               (implicit CCR)]>;
-}
+
+class ShiftOp_M<SizeInfo sz, string mnemonic, SDNode op>
+  : M68kInst<(outs), (ins mem:$dst),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$dst"),
+             [(store (op (sz.VT (load addr:$dst)), (i32 1)), addr:$dst),
+              (implicit CCR)]>;
+} // Defs = [CCR]
 
 multiclass BinOp<string mnemonic, SDNode op> {
   def ldd : BinOp_DD<SizeL, mnemonic, op>;
@@ -207,6 +233,18 @@ multiclass BinOpAdd<string mnemonic, SDNode op> : BinOp<mnemonic, op> {
   // How about as a post selection peep-hole?
 }
 
+multiclass ShiftOp<string mnemonic, SDNode op> {
+  def ldd : ShiftOp_DD<SizeL, mnemonic, op>;
+  def wdd : ShiftOp_DD<SizeW, mnemonic, op>;
+  def bdd : ShiftOp_DD<SizeB, mnemonic, op>;
+  def lid : ShiftOp_ID<SizeL, mnemonic, op>;
+  def wid : ShiftOp_ID<SizeW, mnemonic, op>;
+  def bid : ShiftOp_ID<SizeB, mnemonic, op>;
+  def lm  : ShiftOp_M< SizeL, mnemonic, op>;
+  def wm  : ShiftOp_M< SizeW, mnemonic, op>;
+  def bm  : ShiftOp_M< SizeB, mnemonic, op>;
+}
+
 defm AND : BinOp<"and", and>;
 defm EOR : BinOp<"eor", xor>;
 defm OR : BinOp<"or", or>;
@@ -214,10 +252,21 @@ defm OR : BinOp<"or", or>;
 defm ADD : BinOpAdd<"add", add>;
 defm SUB : BinOpAdd<"sub", sub>;
 
-def LEA : M68kInst<(outs AR:$dst), (ins mem:$src2), "lea\t$src2, $dst",
-                   [(set AR:$dst, addr:$src2)]>;
+defm LSL : ShiftOp<"lsl", shl>;
+defm LSR : ShiftOp<"lsr", srl>;
+defm ASR : ShiftOp<"asr", sra>;
+defm ROL : ShiftOp<"rol", rotl>;
+defm ROR : ShiftOp<"ror", rotr>;
+// TODO(kwaters): ASL, ROXL, ROXR exists as instructions, but aren't intresting
+// for selection.
 
-// TODO(kwaters): shifts, bit manipulating instructions.
+let Defs = [CCR], Constraints = "$dst = $src" in
+def SWAPl : M68kInst<(outs DR32:$dst), (ins DR32:$src),
+                     "swap.w\t$dst",
+                     [(set DR32:$dst, (rotl DR32:$src, (i32 16))),
+                      (implicit CCR)]>;
+
+// TODO(kwaters): bit manipulating instructions.
 
 //===----------------------------------------------------------------------===//
 // Extended adds and subtracts
