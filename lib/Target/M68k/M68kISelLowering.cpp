@@ -38,7 +38,10 @@ M68kTargetLowering::M68kTargetLowering(M68kTargetMachine &TM)
     setLoadExtAction(ExtType, MVT::i32, Expand);
   }
 
-  // TODO(kwaters): Truncating stores should be supported.
+  // Easiest to match truncation stores with the truncating patterns.
+  setTruncStoreAction(MVT::i16, MVT::i8, Expand);
+  setTruncStoreAction(MVT::i32, MVT::i8, Expand);
+  setTruncStoreAction(MVT::i32, MVT::i16, Expand);
 }
 
 

@@ -41,6 +41,26 @@ def i8imm1_8  : ImmLeaf<i8,  [{ return 1 <= Imm && Imm <= 8; }]>;
 def i32imm9_15  : ImmLeaf<i32, [{ return  9 <= Imm && Imm <= 15; }]>;
 def i32imm24_31 : ImmLeaf<i32, [{ return 24 <= Imm && Imm <= 31; }]>;
 
+// Bit immediates
+def OnehotXForm : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant(Log2_64(N->getZExtValue()), MVT::i32);
+}]>;
+def OnecoldXForm : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant(Log2_64(invertValue(N)), MVT::i32);
+}]>;
+
+multiclass BitImm<ValueType vt> {
+  def _onehot : PatFrag<(ops), (vt imm),
+                        [{ return isPowerOf2_64(N->getZExtValue()); }],
+                        OnehotXForm>;
+  def _onecold : PatFrag<(ops), (vt imm),
+                        [{ return isPowerOf2_64(invertValue(N)); }],
+                        OnecoldXForm>;
+}
+defm i32imm : BitImm<i32>;
+defm i16imm : BitImm<i16>;
+defm i8imm : BitImm<i8>;
+
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
                           [SDNPWantParent]>;
 
@@ -78,7 +98,7 @@ def SizeB : SizeInfo<i8,  ".b", DR8,  i8imm,  i8imm1_8>;
 
 // [.] ABCD    [X] ADD     [ ] ADDA    [X] ADDI    [X] ADDQ
 // [X] ADDX    [X] AND     [X] ANDI    [X] ASlr    [ ] Bcc
-// [ ] BCHG    [ ] BCLR    [ ] BRA     [ ] BSET    [ ] BSR
+// [X] BCHG    [X] BCLR    [ ] BRA     [X] BSET    [ ] BSR
 // [ ] BTST    [.] CHK     [ ] CLR     [ ] CMP     [ ] CMPA
 // [ ] CMPI    [ ] CMPM    [ ] DBcc    [ ] DIVS    [ ] DIVU
 // [X] EOR     [X] EORI    [.] EXG     [X] EXT     [ ] JMP
@@ -354,6 +374,106 @@ def ROLwid_PSEUDO
 }
 
 // TODO(kwaters): bit manipulating instructions.
+// TODO(kwaters): need to make sure this gets selected
+
+let Defs = [CCR] in {
+let Constraints = "$src1 = $dst" in {
+class BitOp_DD<SizeInfo sz, string mnemonic, SDPatternOperator op>
+  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src1, DR32:$src2),
+             !strconcat(mnemonic, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1,
+                                         (shl (sz.VT 1), DR32:$src2))),
+              (implicit CCR)]>;
+
+class BitOp_ID<SizeInfo sz, string mnemonic, SDPatternOperator op,
+               SDPatternOperator immop>
+  : M68kInst<(outs sz.RegClass:$dst),
+             (ins sz.RegClass:$src1, sz.ImmOperand:$src2),
+             !strconcat(mnemonic, "\t$src2, $dst"),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src1, immop:$src2)),
+              (implicit CCR)]>;
+} // Constraints = "$src1 = $dst"
+
+class BitOp_DM<string mnemonic, SDPatternOperator op>
+  : M68kInst<(outs), (ins mem:$dst, DR32:$src),
+             !strconcat(mnemonic, "\t$src, $dst"),
+             [(store (op (i8 (load addr:$dst)), (shl (i8 1), DR32:$src)),
+                     addr:$dst),
+              (implicit CCR)]>;
+
+class BitOp_IM<string mnemonic, SDPatternOperator op, SDPatternOperator immop>
+  : M68kInst<(outs), (ins mem:$dst, i8imm:$src),
+             !strconcat(mnemonic, "\t$src, $dst"),
+             [(store (op (i8 (load addr:$dst)), immop:$src), addr:$dst),
+              (implicit CCR)]>;
+} // Defs = [CCR]
+
+multiclass BitOp<string mnemonic, SDPatternOperator op,
+                 SDPatternOperator immop32, SDPatternOperator immop16,
+                 SDPatternOperator immop8, SDPatternOperator immop = op> {
+  def ldd : BitOp_DD<SizeL, mnemonic, op>;
+  def lid : BitOp_ID<SizeL, mnemonic, immop, immop32>;
+  def wid : BitOp_ID<SizeW, mnemonic, immop, immop16>;
+  def bid : BitOp_ID<SizeB, mnemonic, immop, immop8>;
+  def bdm : BitOp_DM<mnemonic, op>;
+  def bim : BitOp_IM<mnemonic, immop, immop8>;
+
+  // DD Forms for DR8 and DR16
+  def : Pat<(op DR32:$src1, (shl (i32 1), (i32 (zext DR16:$src2)))),
+            (!cast<M68kInst>(NAME#"ldd")
+               DR32:$src1,
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src2, sub_word))>;
+  def : Pat<(op DR32:$src1, (shl (i32 1), (i32 (zext DR8:$src2)))),
+            (!cast<M68kInst>(NAME#"ldd")
+               DR32:$src1,
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src2, sub_byte))>;
+  def : Pat<(op DR16:$src1, (shl (i16 1), DR32:$src2)),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src1, sub_word),
+               DR32:$src2), sub_word)>;
+  def : Pat<(op DR16:$src1, (shl (i16 1), (i32 (zext DR16:$src2)))),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src1, sub_word),
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src2, sub_word)),
+               sub_word)>;
+  def : Pat<(op DR16:$src1, (shl (i16 1), (i32 (zext DR8:$src2)))),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src1, sub_word),
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src2, sub_byte)),
+               sub_word)>;
+  def : Pat<(op DR8:$src1, (shl (i8 1), DR32:$src2)),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src1, sub_byte),
+               DR32:$src2), sub_byte)>;
+  def : Pat<(op DR8:$src1, (shl (i8 1), (i32 (zext DR16:$src2)))),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src1, sub_byte),
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src2, sub_word)),
+               sub_byte)>;
+  def : Pat<(op DR8:$src1, (shl (i8 1), (i32 (zext DR8:$src2)))),
+            (EXTRACT_SUBREG (!cast<M68kInst>(NAME#"ldd")
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src1, sub_byte),
+               (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src2, sub_byte)),
+               sub_byte)>;
+
+  // Pattern for 8
+  // TODO(kwaters): Do we need this?  Why is clang producing so many zexts and
+  // truncastes?
+  def : Pat<(store (i8 (trunc (op (anyext (i8 (load addr:$dst))),
+                                  (shl (i32 1), DR32:$src)))),
+                   addr:$dst),
+            (!cast<M68kInst>(NAME#"bdm") addr:$dst, DR32:$src)>;
+}
+
+def bitclr : PatFrag<(ops node:$lhs, node:$rhs),
+                     (and node:$lhs, (not node:$rhs))>;
+
+defm BCHG : BitOp<"bchg", xor, i32imm_onehot, i16imm_onehot, i8imm_onehot>;
+defm BSET : BitOp<"bset", or, i32imm_onehot, i16imm_onehot, i8imm_onehot>;
+defm BCLR : BitOp<"bclr", bitclr, i32imm_onecold, i16imm_onecold,
+                  i8imm_onecold, and>;
+
+// BTST (no pattern?)
 
 //===----------------------------------------------------------------------===//
 // Extended adds and subtracts
@@ -395,7 +515,7 @@ def : Pat<(subc DR32:$src1, DR32:$src2), (SUBldd DR32:$src1, DR32:$src2)>;
 def : Pat<(subc DR32:$src, (load addr:$src2)), (SUBlmd DR32:$src, addr:$src2)>;
 
 //===----------------------------------------------------------------------===//
-// Extension
+// Extension And Truncation
 //===----------------------------------------------------------------------===//
 
 def : Pat<(i16 (zext DR8:$src)),
@@ -426,7 +546,21 @@ def EXTl_PSEUDO : M68kInst<(outs DR32:$dst), (ins DR16:$src),
 def EXTl : M68kInst<(outs DR32:$dst), (ins), "ext.l\t$dst", []>;
 def EXTw : M68kInst<(outs DR16:$dst), (ins), "ext.w\t$dst", []>;
 
-// TODO(kwaters): anyext
+// Anyext patterns
+def : Pat<(i32 (anyext DR8:$src)),
+          (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR8:$src, sub_byte)>;
+def : Pat<(i32 (anyext DR16:$src)),
+          (INSERT_SUBREG (i32 (IMPLICIT_DEF)), DR16:$src, sub_word)>;
+def : Pat<(i16 (anyext DR8:$src)),
+          (INSERT_SUBREG (i16 (IMPLICIT_DEF)), DR8:$src, sub_byte)>;
+
+// Truncation patterns
+def : Pat<(i8 (trunc DR32:$src)),
+          (EXTRACT_SUBREG DR32:$src, sub_byte)>;
+def : Pat<(i16 (trunc DR32:$src)),
+          (EXTRACT_SUBREG DR32:$src, sub_word)>;
+def : Pat<(i8 (trunc DR16:$src)),
+          (EXTRACT_SUBREG DR16:$src, sub_byte)>;
 
 //===----------------------------------------------------------------------===//
 // Flow control

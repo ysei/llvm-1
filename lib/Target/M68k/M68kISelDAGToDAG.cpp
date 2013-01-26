@@ -38,6 +38,11 @@ public:
   virtual SDNode *Select(SDNode *Node);
 
 private:
+  uint64_t invertValue(const ConstantSDNode *N) const {
+    const uint64_t mask = (1 << N->getConstantIntValue()->getBitWidth()) - 1;
+    return N->getZExtValue() ^ mask;
+  }
+
   // Tablegenerated selector
   #include "M68kGenDAGISel.inc"
 
