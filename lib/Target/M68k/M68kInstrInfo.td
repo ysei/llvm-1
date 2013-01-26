@@ -66,6 +66,34 @@ def SizeL : SizeInfo<i32, ".l", DR32, i32imm, i32imm1_8>;
 def SizeW : SizeInfo<i16, ".w", DR16, i16imm, i16imm1_8>;
 def SizeB : SizeInfo<i8,  ".b", DR8,  i8imm,  i8imm1_8>;
 
+
+//===----------------------------------------------------------------------===//
+// Instruction TODO
+//===----------------------------------------------------------------------===//
+
+// Key
+// [X] - Implented
+// [.] - Not interesting, except for assembler/disassembler
+// [ ] - Not implemented
+
+// [.] ABCD    [X] ADD     [ ] ADDA    [X] ADDI    [X] ADDQ
+// [X] ADDX    [X] AND     [X] ANDI    [X] ASlr    [ ] Bcc
+// [ ] BCHG    [ ] BCLR    [ ] BRA     [ ] BSET    [ ] BSR
+// [ ] BTST    [.] CHK     [ ] CLR     [ ] CMP     [ ] CMPA
+// [ ] CMPI    [ ] CMPM    [ ] DBcc    [ ] DIVS    [ ] DIVU
+// [X] EOR     [X] EORI    [.] EXG     [X] EXT     [ ] JMP
+// [ ] JSR     [X] LEA     [ ] LINK    [X] LSlr    [X] MOVE
+// [ ] MOVEA   [ ] MOVEM   [.] MOVEP   [X] MOVEQ   [ ] MULS
+// [ ] MULU    [.] NBCD    [X] NEG     [.] NEGX    [.] NOP
+// [X] NOT     [X] OR      [X] ORI     [ ] PEA     [.] RESET
+// [X] ROlr    [.] ROXlr   [.] RTE     [.] RTR     [ ] RTS
+// [.] SBCD    [ ] Scc     [.] STOP    [X] SUB     [ ] SUBA
+// [X] SUBI    [X] SUBQ    [X] SUBX    [X] SWAP    [?] TAS
+// [ ] TRAP    [.] TRAPV   [ ] TST     [ ] UNLK
+//
+// Exg might be useful, but would take some voodoo and the register allocation
+// level.
+
 //===----------------------------------------------------------------------===//
 // MOVE (all flavors)
 //===----------------------------------------------------------------------===//
