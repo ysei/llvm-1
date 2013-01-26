@@ -170,7 +170,15 @@ class ShiftOp_ID<SizeInfo sz, string mnemonic, SDNode op>
              !strconcat(mnemonic, sz.AsmFlag, "\t$src2, $dst"),
              [(set sz.RegClass:$dst, (op sz.RegClass:$src1, i32imm1_8:$src2)),
               (implicit CCR)]>;
-} // Constrints = "$src1 = $dst"
+} // Constraints = "$src1 = $dst"
+
+let Constraints = "$src = $dst" in {
+class UnaryOp_D<SizeInfo sz, string mnemonic, SDPatternOperator op>
+  : M68kInst<(outs sz.RegClass:$dst), (ins sz.RegClass:$src),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$dst"),
+             [(set sz.RegClass:$dst, (op sz.RegClass:$src)),
+              (implicit CCR)]>;
+} // Constraints = "$src = $dst"
 
 class BinOp_DM<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst, sz.RegClass:$src),
@@ -196,6 +204,12 @@ class ShiftOp_M<SizeInfo sz, string mnemonic, SDNode op>
   : M68kInst<(outs), (ins mem:$dst),
              !strconcat(mnemonic, sz.AsmFlag, "\t$dst"),
              [(store (op (sz.VT (load addr:$dst)), (i32 1)), addr:$dst),
+              (implicit CCR)]>;
+
+class UnaryOp_M<SizeInfo sz, string mnemonic, SDPatternOperator op>
+  : M68kInst<(outs), (ins mem:$dst),
+             !strconcat(mnemonic, sz.AsmFlag, "\t$dst"),
+             [(store (op (sz.VT (load addr:$dst))), addr:$dst),
               (implicit CCR)]>;
 } // Defs = [CCR]
 
@@ -246,6 +260,18 @@ multiclass ShiftOp<string mnemonic, SDNode op> {
   def wm  : ShiftOp_M< SizeW, mnemonic, op>;
   def bm  : ShiftOp_M< SizeB, mnemonic, op>;
 }
+
+multiclass UnaryOp<string mnemonic, SDPatternOperator op> {
+  def ld : UnaryOp_D<SizeL, mnemonic, op>;
+  def wd : UnaryOp_D<SizeW, mnemonic, op>;
+  def bd : UnaryOp_D<SizeB, mnemonic, op>;
+  def lm : UnaryOp_M<SizeL, mnemonic, op>;
+  def wm : UnaryOp_M<SizeW, mnemonic, op>;
+  def bm : UnaryOp_M<SizeB, mnemonic, op>;
+}
+
+defm NEG : UnaryOp<"neg", ineg>;
+defm NOT : UnaryOp<"not", not>;
 
 defm AND : BinOp<"and", and>;
 defm EOR : BinOp<"eor", xor>;
