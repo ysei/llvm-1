@@ -32,8 +32,9 @@ public:
   virtual const uint32_t *getCallPreservedMask(CallingConv::ID) const;
   virtual BitVector getReservedRegs(const MachineFunction &MF) const;
 
-  virtual void eliminateFrameIndex(MachineBasicBlock::iterator II,
-                                   int SPAdj, RegScavenger *RS = NULL) const;
+  virtual void eliminateFrameIndex(MachineBasicBlock::iterator MI,
+                                   int SPAdj, unsigned FIOperandNum,
+                                   RegScavenger *RS = NULL) const;
   virtual unsigned getFrameRegister(const MachineFunction &MF) const;
 };
 

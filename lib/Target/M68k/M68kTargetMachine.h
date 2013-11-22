@@ -18,7 +18,7 @@
 #include "M68kInstrInfo.h"
 #include "M68kSelectionDAGInfo.h"
 #include "M68kSubtarget.h"
-#include "llvm/DataLayout.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {

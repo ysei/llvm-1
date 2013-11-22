@@ -12,7 +12,8 @@
 
 #include "M68kMacTargetObjectFile.h"
 #include "llvm/MC/MCContext.h"
-#include "llvm/MC/MCSectionMPW.h"
+#include "llvm/MC/MCSectionELF.h"
+#include "llvm/Support/ELF.h"
 
 using namespace llvm;
 
@@ -37,32 +38,45 @@ void M68kMacTargetLoweringObjectFile::Initialize(MCContext &Ctx,
   EHSectionType = 0;
   EHSectionFlags = 0;
 
+  
   TextSection
-    = Ctx.getMPWSection("main",
+    = Ctx.getELFSection("main",
+                        ELF::SHT_PROGBITS,
+                        ELF::SHF_EXECINSTR | ELF::SHF_ALLOC,
                         SectionKind::getText());
 
   // TODO(kwaters): How does data work?  What does data rel mean?
   DataSection
-    = Ctx.getMPWSection("main_data",
+    = Ctx.getELFSection("main_data",
+                        ELF::SHT_PROGBITS,
+                        ELF::SHF_WRITE | ELF::SHF_ALLOC,
                         SectionKind::getDataRel());
 
   // TODO(kwaters): Look at what the standard lib does.
   StaticCtorSection
-    = Ctx.getMPWSection("ctor",
+    = Ctx.getELFSection("ctor",
+                        ELF::SHT_PROGBITS,
+                        ELF::SHF_ALLOC | ELF::SHF_WRITE,
                         SectionKind::getDataRel());
   StaticDtorSection
-    = Ctx.getMPWSection("dtor",
+    = Ctx.getELFSection("dtor",
+                        ELF::SHT_PROGBITS,
+                        ELF::SHF_ALLOC | ELF::SHF_WRITE,
                         SectionKind::getDataRel());
 
   /// LSDASection - If exception handling is supported by the target, this is
   /// the section the Language Specific Data Area information is emitted to.
   LSDASection
-    = Ctx.getMPWSection("exception",
+    = Ctx.getELFSection("exception",
+                        ELF::SHT_PROGBITS,
+                        ELF::SHF_ALLOC,
                         SectionKind::getReadOnlyWithRel());
 
   // Don't want to invoke demand creation.
   EHFrameSection
-    = Ctx.getMPWSection("ehframe",
+    = Ctx.getELFSection("ehframe",
+                        EHSectionType,
+                        EHSectionFlags,
                         SectionKind::getReadOnly());
 
   CompactUnwindSection = 0;
@@ -80,7 +94,6 @@ void M68kMacTargetLoweringObjectFile::Initialize(MCContext &Ctx,
   DwarfDebugInlineSection = 0;
   DwarfStrSection = 0;
   DwarfLocSection = 0;
-  DwarfARangesSection = 0;
   DwarfRangesSection = 0;
   DwarfMacroInfoSection = 0;
 
@@ -94,5 +107,5 @@ const MCSection *M68kMacTargetLoweringObjectFile::
 getExplicitSectionGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const {
   assert(GV->hasSection() && "GlobalValue missing section.");
-  return getContext().getMPWSection(GV->getSection(), Kind);
+  return getContext().getELFSection(GV->getSection(), 0, 0, Kind);
 }

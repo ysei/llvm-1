@@ -12,6 +12,7 @@
 
 #include "M68kMCTargetDesc.h"
 #include "M68kMCAsmInfo.h"
+#include "M68kMCTargetDesc.h"
 #include "InstPrinter/M68kInstPrinter.h"
 #include "llvm/MC/MCCodeGenInfo.h"
 #include "llvm/MC/MCInstrInfo.h"
@@ -30,15 +31,16 @@
 
 using namespace llvm;
 
-static MCAsmInfo *createM68kMCAsmInfo(const Target &T, StringRef TT) {
-  MCAsmInfo *MAI = new M68kMCAsmInfo(T, TT);
-
+static MCAsmInfo *createM68kMCAsmInfo(const MCRegisterInfo &MRI, StringRef TT) {
+  Triple TheTriple(TT);
+  MCAsmInfo *MAI = new M68kMCAsmInfo(TheTriple);
   // Initial frame state
   // TODO What does this do?
-  MachineLocation Dst(MachineLocation::VirtualFP);
-  MachineLocation Src(M68k::A7, 0);
-  MAI->addInitialFrameState(0, Dst, Src);
 
+  MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(
+      0, MRI.getDwarfRegNum(M68k::A7, true), 4);
+  MAI->addInitialFrameState(Inst);
+  
   return MAI;
 }
 
@@ -71,6 +73,7 @@ static MCInstPrinter *createM68kMCInstPrinter(const Target &T,
 }
 
 extern "C" void LLVMInitializeM68kTargetMC() {
+  printf("!!!TESTING!!!");
   RegisterMCAsmInfoFn X(TheM68kTarget, createM68kMCAsmInfo);
 
   TargetRegistry::RegisterMCInstrInfo(TheM68kTarget, createM68kMCInstrInfo);

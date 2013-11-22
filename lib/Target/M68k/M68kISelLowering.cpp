@@ -54,8 +54,8 @@ M68kTargetLowering::M68kTargetLowering(M68kTargetMachine &TM)
 SDValue M68kTargetLowering::
 LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
                      bool isVarArg,
-                     const SmallVectorImpl<ISD::InputArg> &Ins, DebugLoc dl,
-                     SelectionDAG &DAG,
+                     const SmallVectorImpl<ISD::InputArg> &Ins,
+                     SDLoc dl, SelectionDAG &DAG,
                      SmallVectorImpl<SDValue> &InVals) const {
   // Check for the right calling convention.
   switch (CallConv) {
@@ -82,7 +82,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
 
     int FI = MFI->CreateFixedObject(VA.getLocVT().getStoreSize(),
                                     VA.getLocMemOffset(), true);
-    SDValue FIN = DAG.getFrameIndex(FI, VA.getLocVT());
+    SDValue FIN = DAG.getFrameIndex(FI, getPointerTy());
     InVals.push_back(DAG.getLoad(VA.getValVT(), dl, Chain, FIN,
                                  MachinePointerInfo::getFixedStack(FI),
                                  false, false, false, 0));
@@ -96,7 +96,7 @@ M68kTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                 bool isVarArg,
                                 const SmallVectorImpl<ISD::OutputArg> &Outs,
                                 const SmallVectorImpl<SDValue> &OutVals,
-                                DebugLoc dl, SelectionDAG &DAG) const {
+                                SDLoc dl, SelectionDAG &DAG) const {
   // Check for the right calling convention.
   switch (CallConv) {
   default:
@@ -116,10 +116,10 @@ M68kTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   // Mark out registers as live outs.
   // TODO simplify
-  if (DAG.getMachineFunction().getRegInfo().liveout_empty()) {
+  if (DAG.getMachineFunction().getRegInfo().livein_empty()) {
     for (unsigned i = 0; i != RVLocs.size(); ++i)
       if (RVLocs[i].isRegLoc())
-        DAG.getMachineFunction().getRegInfo().addLiveOut(RVLocs[i].getLocReg());
+        DAG.getMachineFunction().getRegInfo().addLiveIn(RVLocs[i].getLocReg());
   }
 
   SDValue Flag;

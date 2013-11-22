@@ -683,19 +683,6 @@ namespace {
 
       return true;
     }
-
-    bool isPureIEChain(InsertElementInst *IE) {
-      InsertElementInst *IENext = IE;
-      do {
-        if (!isa<UndefValue>(IENext->getOperand(0)) &&
-            !isa<InsertElementInst>(IENext->getOperand(0))) {
-          return false;
-        }
-      } while ((IENext =
-                 dyn_cast<InsertElementInst>(IENext->getOperand(0))));
-
-      return true;
-    }
   };
 
   // This function implements one vectorization iteration on the provided

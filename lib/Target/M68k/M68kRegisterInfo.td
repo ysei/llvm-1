@@ -28,8 +28,8 @@ class M68kRegWithSubregs<bits<3> num, string n, list<Register> subregs>
 }
 
 let Namespace = "M68k" in {
-  def sub_byte : SubRegIndex;
-  def sub_word : SubRegIndex;
+  def sub_byte : SubRegIndex<8>;
+  def sub_word : SubRegIndex<16>;
 }
 
 // Data registers are made up of 3 sub-sizes.

@@ -16,13 +16,12 @@
 #include "llvm/MC/MCAsmInfo.h"
 
 namespace llvm {
-  class StringRef;
-  class Target;
+  class Triple;
 
   class M68kMCAsmInfo : public MCAsmInfo {
     virtual void anchor();
   public:
-    M68kMCAsmInfo(const Target &T, StringRef TT);
+    M68kMCAsmInfo(const Triple &Triple);
   };
 } // end namespace llvm
 

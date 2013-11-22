@@ -16,13 +16,11 @@ using namespace llvm;
 
 void M68kMCAsmInfo::anchor() { }
 
-M68kMCAsmInfo::M68kMCAsmInfo(const Target &T, StringRef TT) {
+M68kMCAsmInfo::M68kMCAsmInfo(const Triple &Triple) {
   IsLittleEndian = false;
-  MaxInstLength = 8; // TODO verify
-  PCSymbol = ".";
+  MaxInstLength = 22;
+  MinInstAlignment = 2;
   CommentString = ";";
-  AllowPeriodsInName = false;
-  AllowUTF8 = false;
 
   ZeroDirective = "DCB.B";
   AsciiDirective = "DC.B";

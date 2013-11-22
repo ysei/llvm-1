@@ -12,7 +12,7 @@
 
 #include "M68kInstrInfo.h"
 
-#define GET_INSTRINFO_CTOR
+#define GET_INSTRINFO_CTOR_DTOR
 #include "M68kGenInstrInfo.inc"
 
 #include "llvm/CodeGen/MachineInstrBuilder.h"

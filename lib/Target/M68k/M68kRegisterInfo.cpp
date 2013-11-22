@@ -35,7 +35,8 @@ const uint32_t *M68kRegisterInfo::getCallPreservedMask(CallingConv::ID) const {
 }
 
 void M68kRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
-                                           int SPAdj, RegScavenger *RS) const {
+                                           int SPAdj, unsigned FIOperandNum,
+                                           RegScavenger *RS) const {
   MachineInstr &MI = *II;
   MachineFunction &MF = *MI.getParent()->getParent();
 
