@@ -1,0 +1,9 @@
+Need to finish implementing M68MCInstLower.
+
+Need to update MCSectionMPW with a better understanding of how data is stored.
+
+Triple should be m68k-apple-mac.
+
+Investigate SIGN_EXTEND_INREG.
+
+Gather one off .ll tests into a real, albeit adhoc test suite.

@@ -1252,6 +1252,7 @@ def : MipsPat<(MipsLo tconstpool:$in), (ADDiu ZERO, tconstpool:$in)>;
 def : MipsPat<(MipsLo tglobaltlsaddr:$in), (ADDiu ZERO, tglobaltlsaddr:$in)>;
 def : MipsPat<(MipsLo texternalsym:$in), (ADDiu ZERO, texternalsym:$in)>;
 
+<<<<<<< HEAD
 def : MipsPat<(add GPR32:$hi, (MipsLo tglobaladdr:$lo)),
               (ADDiu GPR32:$hi, tglobaladdr:$lo)>;
 def : MipsPat<(add GPR32:$hi, (MipsLo tblockaddress:$lo)),
@@ -1262,6 +1263,18 @@ def : MipsPat<(add GPR32:$hi, (MipsLo tconstpool:$lo)),
               (ADDiu GPR32:$hi, tconstpool:$lo)>;
 def : MipsPat<(add GPR32:$hi, (MipsLo tglobaltlsaddr:$lo)),
               (ADDiu GPR32:$hi, tglobaltlsaddr:$lo)>;
+=======
+def : MipsPat<(add CPURegs:$hi, (MipsLo tglobaladdr:$lo)),
+              (ADDiu CPURegs:$hi, tglobaladdr:$lo)>;
+def : MipsPat<(add CPURegs:$hi, (MipsLo tblockaddress:$lo)),
+              (ADDiu CPURegs:$hi, tblockaddress:$lo)>;
+def : MipsPat<(add CPURegs:$hi, (MipsLo tjumptable:$lo)),
+              (ADDiu CPURegs:$hi, tjumptable:$lo)>;
+def : MipsPat<(add CPURegs:$hi, (MipsLo tconstpool:$lo)),
+              (ADDiu CPURegs:$hi, tconstpool:$lo)>;
+def : MipsPat<(add CPURegs:$hi, (MipsLo tglobaltlsaddr:$lo)),
+              (ADDiu CPURegs:$hi, tglobaltlsaddr:$lo)>;
+>>>>>>> 5ddc3b516edb7b7b50c30e6898ae4f7b43961a97
 
 // gp_rel relocs
 def : MipsPat<(add GPR32:$gp, (MipsGPRel tglobaladdr:$in)),

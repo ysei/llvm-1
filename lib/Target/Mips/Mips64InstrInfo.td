@@ -251,6 +251,7 @@ def : MipsPat<(MipsLo tglobaltlsaddr:$in),
               (DADDiu ZERO_64, tglobaltlsaddr:$in)>;
 def : MipsPat<(MipsLo texternalsym:$in), (DADDiu ZERO_64, texternalsym:$in)>;
 
+<<<<<<< HEAD
 def : MipsPat<(add GPR64:$hi, (MipsLo tglobaladdr:$lo)),
               (DADDiu GPR64:$hi, tglobaladdr:$lo)>;
 def : MipsPat<(add GPR64:$hi, (MipsLo tblockaddress:$lo)),
@@ -270,6 +271,27 @@ def : WrapperPat<tjumptable, DADDiu, GPR64>;
 def : WrapperPat<tglobaltlsaddr, DADDiu, GPR64>;
 
 defm : BrcondPats<GPR64, BEQ64, BNE64, SLT64, SLTu64, SLTi64, SLTiu64,
+=======
+def : MipsPat<(add CPU64Regs:$hi, (MipsLo tglobaladdr:$lo)),
+              (DADDiu CPU64Regs:$hi, tglobaladdr:$lo)>;
+def : MipsPat<(add CPU64Regs:$hi, (MipsLo tblockaddress:$lo)),
+              (DADDiu CPU64Regs:$hi, tblockaddress:$lo)>;
+def : MipsPat<(add CPU64Regs:$hi, (MipsLo tjumptable:$lo)),
+              (DADDiu CPU64Regs:$hi, tjumptable:$lo)>;
+def : MipsPat<(add CPU64Regs:$hi, (MipsLo tconstpool:$lo)),
+              (DADDiu CPU64Regs:$hi, tconstpool:$lo)>;
+def : MipsPat<(add CPU64Regs:$hi, (MipsLo tglobaltlsaddr:$lo)),
+              (DADDiu CPU64Regs:$hi, tglobaltlsaddr:$lo)>;
+
+def : WrapperPat<tglobaladdr, DADDiu, CPU64Regs>;
+def : WrapperPat<tconstpool, DADDiu, CPU64Regs>;
+def : WrapperPat<texternalsym, DADDiu, CPU64Regs>;
+def : WrapperPat<tblockaddress, DADDiu, CPU64Regs>;
+def : WrapperPat<tjumptable, DADDiu, CPU64Regs>;
+def : WrapperPat<tglobaltlsaddr, DADDiu, CPU64Regs>;
+
+defm : BrcondPats<CPU64Regs, BEQ64, BNE64, SLT64, SLTu64, SLTi64, SLTiu64,
+>>>>>>> 5ddc3b516edb7b7b50c30e6898ae4f7b43961a97
                   ZERO_64>;
 
 def : MipsPat<(brcond (i32 (setlt i64:$lhs, 1)), bb:$dst),

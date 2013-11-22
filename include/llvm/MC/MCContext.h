@@ -157,7 +157,7 @@ namespace llvm {
     /// The line table start symbol for each Compile Unit.
     DenseMap<unsigned, MCSymbol *> MCLineTableSymbols;
 
-    void *MachOUniquingMap, *ELFUniquingMap, *COFFUniquingMap;
+    void *MachOUniquingMap, *ELFUniquingMap, *COFFUniquingMap, *MPWUniquingMap;
 
     /// Do automatic reset in destructor
     bool AutoReset;
@@ -268,6 +268,7 @@ namespace llvm {
                                         SectionKind Kind);
 
     const MCSectionCOFF *getCOFFSection(StringRef Section);
+
 
     /// @}
 
