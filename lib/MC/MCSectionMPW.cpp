@@ -15,7 +15,8 @@ using namespace llvm;
 MCSectionMPW::~MCSectionMPW() { }
 
 void MCSectionMPW::PrintSwitchToSection(const MCAsmInfo &MAI,
-                                        raw_ostream &OS) const {
+                                        raw_ostream &OS,
+                                        const MCExpr *Subsection) const {
   OS << "\tSEG\t'" << SectionName << "'\n";
 }
 

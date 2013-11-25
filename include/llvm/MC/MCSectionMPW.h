@@ -35,7 +35,17 @@ public:
 
   // Base class overrides
   virtual void PrintSwitchToSection(const MCAsmInfo &MAI,
-                                    raw_ostream &OS) const;
+                                    raw_ostream &OS,
+                                    const MCExpr *Subsection) const;
+
+  // Convenience routines to get label names for the beginning/end of a
+  // section.
+  virtual std::string getLabelBeginName() const {
+    return SectionName.str() + "_begin";
+  }
+  virtual std::string getLabelEndName() const {
+    return SectionName.str() + "_end";
+  }
 
   virtual bool isBaseAddressKnownZero() const {
     // All sections are relocatable.

@@ -18,6 +18,7 @@
 #include "llvm/MC/MCSectionCOFF.h"
 #include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCSectionMachO.h"
+#include "llvm/MC/MCSectionMPW.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/ELF.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -35,6 +36,7 @@ typedef std::pair<std::string, std::string> SectionGroupPair;
 typedef StringMap<const MCSectionMachO*> MachOUniqueMapTy;
 typedef std::map<SectionGroupPair, const MCSectionELF *> ELFUniqueMapTy;
 typedef std::map<SectionGroupPair, const MCSectionCOFF *> COFFUniqueMapTy;
+typedef StringMap<const MCSectionMPW*> MPWUniqueMapTy;
 
 MCContext::MCContext(const MCAsmInfo *mai, const MCRegisterInfo *mri,
                      const MCObjectFileInfo *mofi, const SourceMgr *mgr,
@@ -324,6 +326,22 @@ const MCSectionCOFF *MCContext::getCOFFSection(StringRef Section) {
   if (Iter == Map.end())
     return 0;
   return Iter->second;
+}
+
+const MCSectionMPW *MCContext::getMPWSection(StringRef Section,
+                                             SectionKind Kind) {
+  if (MPWUniquingMap == 0)
+    MPWUniquingMap = new MPWUniqueMapTy();
+  MPWUniqueMapTy &Map = *(MPWUniqueMapTy*)MPWUniquingMap;
+  
+  // Do the lookup, if we have a hit, return it.
+  StringMapEntry<const MCSectionMPW*> &Entry = Map.GetOrCreateValue(Section);
+  if (Entry.getValue()) return Entry.getValue();
+  
+  MCSectionMPW *Result = new (*this) MCSectionMPW(Entry.getKey(), Kind);
+  
+  Entry.setValue(Result);
+  return Result;
 }
 
 //===----------------------------------------------------------------------===//

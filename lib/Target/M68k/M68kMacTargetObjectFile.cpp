@@ -12,7 +12,7 @@
 
 #include "M68kMacTargetObjectFile.h"
 #include "llvm/MC/MCContext.h"
-#include "llvm/MC/MCSectionELF.h"
+#include "llvm/MC/MCSectionMPW.h"
 #include "llvm/Support/ELF.h"
 
 using namespace llvm;
@@ -40,43 +40,31 @@ void M68kMacTargetLoweringObjectFile::Initialize(MCContext &Ctx,
 
   
   TextSection
-    = Ctx.getELFSection("main",
-                        ELF::SHT_PROGBITS,
-                        ELF::SHF_EXECINSTR | ELF::SHF_ALLOC,
+    = Ctx.getMPWSection("main",
                         SectionKind::getText());
 
   // TODO(kwaters): How does data work?  What does data rel mean?
   DataSection
-    = Ctx.getELFSection("main_data",
-                        ELF::SHT_PROGBITS,
-                        ELF::SHF_WRITE | ELF::SHF_ALLOC,
+    = Ctx.getMPWSection("main_data",
                         SectionKind::getDataRel());
 
   // TODO(kwaters): Look at what the standard lib does.
   StaticCtorSection
-    = Ctx.getELFSection("ctor",
-                        ELF::SHT_PROGBITS,
-                        ELF::SHF_ALLOC | ELF::SHF_WRITE,
+    = Ctx.getMPWSection("ctor",
                         SectionKind::getDataRel());
   StaticDtorSection
-    = Ctx.getELFSection("dtor",
-                        ELF::SHT_PROGBITS,
-                        ELF::SHF_ALLOC | ELF::SHF_WRITE,
+    = Ctx.getMPWSection("dtor",
                         SectionKind::getDataRel());
 
   /// LSDASection - If exception handling is supported by the target, this is
   /// the section the Language Specific Data Area information is emitted to.
   LSDASection
-    = Ctx.getELFSection("exception",
-                        ELF::SHT_PROGBITS,
-                        ELF::SHF_ALLOC,
+    = Ctx.getMPWSection("exception",
                         SectionKind::getReadOnlyWithRel());
 
   // Don't want to invoke demand creation.
   EHFrameSection
-    = Ctx.getELFSection("ehframe",
-                        EHSectionType,
-                        EHSectionFlags,
+    = Ctx.getMPWSection("ehframe",
                         SectionKind::getReadOnly());
 
   CompactUnwindSection = 0;
@@ -107,5 +95,5 @@ const MCSection *M68kMacTargetLoweringObjectFile::
 getExplicitSectionGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const {
   assert(GV->hasSection() && "GlobalValue missing section.");
-  return getContext().getELFSection(GV->getSection(), 0, 0, Kind);
+  return getContext().getMPWSection(GV->getSection(), Kind);
 }

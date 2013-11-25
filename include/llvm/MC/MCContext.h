@@ -39,7 +39,8 @@ namespace llvm {
   class MCSectionMachO;
   class MCSectionELF;
   class MCSectionCOFF;
-
+  class MCSectionMPW;
+  
   /// MCContext - Context object for machine code objects.  This class owns all
   /// of the sections that it creates.
   ///
@@ -269,6 +270,7 @@ namespace llvm {
 
     const MCSectionCOFF *getCOFFSection(StringRef Section);
 
+    const MCSectionMPW *getMPWSection(StringRef Section, SectionKind Kind);
 
     /// @}
 
