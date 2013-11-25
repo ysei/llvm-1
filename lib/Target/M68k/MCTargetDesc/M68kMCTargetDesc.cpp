@@ -73,7 +73,6 @@ static MCInstPrinter *createM68kMCInstPrinter(const Target &T,
 }
 
 extern "C" void LLVMInitializeM68kTargetMC() {
-  printf("!!!TESTING!!!");
   RegisterMCAsmInfoFn X(TheM68kTarget, createM68kMCAsmInfo);
 
   TargetRegistry::RegisterMCInstrInfo(TheM68kTarget, createM68kMCInstrInfo);

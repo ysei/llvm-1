@@ -49,6 +49,7 @@ M68kTargetMachine(const Target &T, StringRef TT, StringRef CPU, StringRef FS,
     InstrInfo(*this),
     FrameLowering(Subtarget),
     TSInfo(*this) {
+      initAsmInfo();
 }
 
 bool M68kPassConfig::addInstSelector()
