@@ -1,8 +1,8 @@
 ; REQUIRES: object-emission
 
 ; RUN: llc %s -o %t -filetype=obj -O0 -generate-type-units -generate-odr-hash -mtriple=x86_64-unknown-linux-gnu
-; RUN: llvm-dwarfdump -debug-dump=info %t | FileCheck %s
-;
+; RUN: llvm-dwarfdump %t | FileCheck %s
+
 ; Generated from:
 ; struct bar {};
 
@@ -42,6 +42,8 @@
 ; };
 
 ; wombat wom;
+
+; CHECK-LABEL: .debug_info contents:
 
 ; Check that we generate a hash for bar and the value.
 ; CHECK-LABEL: DW_AT_GNU_odr_signature [DW_FORM_data8] (0x200520c0d5b90eff)
@@ -88,6 +90,12 @@
 ; CHECK-LABEL: DW_AT_GNU_odr_signature [DW_FORM_data8] (0x685bcc220141e9d7)
 ; CHECK: DW_TAG_structure_type
 ; CHECK-NEXT: debug_str{{.*}}"wombat"
+
+; Don't emit pubtype entries for type DIEs in the compile unit that just indirect to a type unit.
+; CHECK-LABEL: .debug_pubtypes contents:
+; CHECK-NEXT: unit_offset = 0x00000000
+; CHECK-NEXT: Offset
+; CHECK-NEXT: {{^$}}
 
 %struct.bar = type { i8 }
 %"class.echidna::capybara::mongoose::fluffy" = type { i32, i32 }
@@ -141,7 +149,7 @@ attributes #0 = { nounwind uwtable "less-precise-fpmad"="false" "no-frame-pointe
 attributes #1 = { nounwind readnone }
 
 !llvm.dbg.cu = !{!0}
-!llvm.module.flags = !{!42}
+!llvm.module.flags = !{!42, !54}
 !llvm.ident = !{!43}
 
 !0 = metadata !{i32 786449, metadata !1, i32 4, metadata !"clang version 3.4 ", i1 false, metadata !"", i32 0, metadata !2, metadata !3, metadata !20, metadata !37, metadata !2, metadata !""} ; [ DW_TAG_compile_unit ] [/tmp/dbginfo/bar.cpp] [DW_LANG_C_plus_plus]
@@ -198,3 +206,4 @@ attributes #1 = { nounwind readnone }
 !51 = metadata !{i32 0, i32 0, metadata !26, null}
 !52 = metadata !{i32 25, i32 0, metadata !26, null}
 !53 = metadata !{i32 25, i32 0, metadata !35, null}
+!54 = metadata !{i32 1, metadata !"Debug Info Version", i32 1}
