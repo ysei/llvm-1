@@ -26,6 +26,13 @@ class M68kRegisterInfo : public M68kGenRegisterInfo {
 public:
   M68kRegisterInfo(M68kTargetMachine &TM, const TargetInstrInfo &TII);
 
+  /// getPointerRegClass - Returns a TargetRegisterClass used for pointer
+  /// values.
+  const TargetRegisterClass *
+  getPointerRegClass(const MachineFunction &MF, unsigned Kind = 0) const {
+    return &M68k::ARRegClass;
+  };
+
   // Code generation virtual methods...
   virtual const uint16_t *
     getCalleeSavedRegs(const MachineFunction *MF = 0) const;

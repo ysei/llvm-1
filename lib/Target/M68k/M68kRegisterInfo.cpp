@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "M68kRegisterInfo.h"
+#include "M68kFrameLowering.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -38,26 +39,26 @@ void M68kRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj, unsigned FIOperandNum,
                                            RegScavenger *RS) const {
   MachineInstr &MI = *II;
-  MachineFunction &MF = *MI.getParent()->getParent();
+  MachineBasicBlock &MBB = *MI.getParent();
+  MachineFunction &MF = *MBB.getParent();
+  int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
+  unsigned FrameReg = getFrameRegister(MF);
 
-  unsigned i = 0;
-  while (!MI.getOperand(i).isFI()) {
-    ++i;
-    assert(i < MI.getNumOperands() &&
-           "Instr doesn't have FrameIndex operand!");
-  }
-
-  int FrameIndex = MI.getOperand(i).getIndex();
   uint64_t StackSize = MF.getFrameInfo()->getStackSize();
   int64_t SpOffset = MF.getFrameInfo()->getObjectOffset(FrameIndex);
-
-  unsigned FrameReg = getFrameRegister(MF);
+  
+  if (FrameReg == M68k::A7) {
+    SpOffset += 4;
+  } else {
+    SpOffset += 8;
+  }
+  
   int64_t Offset = SpOffset + (int64_t)StackSize +
-                   MI.getOperand(i + 1).getImm();
+                   MI.getOperand(FIOperandNum + 1).getImm();
 
   // TODO This doesn't get the correct offset.
-  MI.getOperand(i).ChangeToRegister(FrameReg, false);
-  MI.getOperand(i + 1).ChangeToImmediate(Offset);
+  MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, false);
+  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
 }
 
 BitVector M68kRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
@@ -69,5 +70,11 @@ BitVector M68kRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
 }
 
 unsigned M68kRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-  return M68k::A6;
+  const M68kFrameLowering *TFI =
+  static_cast<const M68kFrameLowering*>(MF.getTarget().getFrameLowering());
+  if (TFI->hasFP(MF)) {
+    return M68k::A6;
+  } else {
+    return M68k::A7;
+  }
 }
