@@ -29,9 +29,8 @@ void M68kFrameLowering::emitPrologue(MachineFunction &MF) const {
   // Get the number of bytes to allocate from the FrameInfo
   int NumBytes = (int) MFI->getStackSize();
   if (!hasFP(MF)) {
-//    return;
+    return;
   }
-  MF.getFrameInfo()->setOffsetAdjustment(4);
   MachineBasicBlock &MBB = MF.front();
   MachineBasicBlock::iterator MBBI = MBB.begin();
   DebugLoc dl = MBB.begin()->getDebugLoc();
@@ -45,7 +44,7 @@ void M68kFrameLowering::emitPrologue(MachineFunction &MF) const {
 void M68kFrameLowering::emitEpilogue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
   if (!hasFP(MF)) {
-//    return;
+    return;
   }
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
   DebugLoc dl = MBB.begin()->getDebugLoc();
