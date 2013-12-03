@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "M68k.h"
-#include "llvm/Module.h"
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 

@@ -139,18 +139,8 @@ public:
   /// \brief Returns the \c CallGraphNode which is used to represent
   /// undetermined calls into the callgraph.
   CallGraphNode *getExternalCallingNode() const { return ExternalCallingNode; }
-<<<<<<< HEAD
 
   CallGraphNode *getCallsExternalNode() const { return CallsExternalNode; }
-
-  /// \brief Returns the root/main method in the module, or some other root
-  /// node, such as the externalcallingnode.
-  CallGraphNode *getRoot() { return Root; }
-  const CallGraphNode *getRoot() const { return Root; }
-=======
-
-  CallGraphNode *getCallsExternalNode() const { return CallsExternalNode; }
->>>>>>> dfb74a58c5ffa658da2b695db7dfdd0b4cc51822
 
   //===---------------------------------------------------------------------
   // Functions to keep a call graph up to date with a function that has been
@@ -347,14 +337,6 @@ public:
     return G->getCallsExternalNode();
   }
 
-<<<<<<< HEAD
-  /// \brief Returns the root/main method in the module, or some other root
-  /// node, such as the externalcallingnode.
-  CallGraphNode *getRoot() { return G->getRoot(); }
-  const CallGraphNode *getRoot() const { return G->getRoot(); }
-
-=======
->>>>>>> dfb74a58c5ffa658da2b695db7dfdd0b4cc51822
   //===---------------------------------------------------------------------
   // Functions to keep a call graph up to date with a function that has been
   // modified.
