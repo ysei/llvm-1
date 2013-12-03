@@ -37,19 +37,17 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 bool KillSrc) const {
   unsigned Opcode = 0;
   if (M68k::DR8RegClass.contains(DestReg, SrcReg))
-    Opcode = M68k::MOVEbdd;
-  else if (M68k::DR16RegClass.contains(DestReg, SrcReg))
-    Opcode = M68k::MOVEwdd;
-  else if (M68k::DR32RegClass.contains(DestReg)) {
-    if (M68k::DR32RegClass.contains(SrcReg))
-      Opcode = M68k::MOVEldd;
-    else if (M68k::ARRegClass.contains(SrcReg))
-      Opcode = M68k::MOVElad;
-  } else if (M68k::ARRegClass.contains(DestReg)) {
-    if (M68k::DR32RegClass.contains(SrcReg))
-      Opcode = M68k::MOVElda;
-    else if (M68k::ARRegClass.contains(SrcReg))
-      Opcode = M68k::MOVElaa;
+    Opcode = M68k::MOVEbrd;
+  else if (M68k::R16RegClass.contains(SrcReg)) {
+    if (M68k::DR16RegClass.contains(DestReg))
+      Opcode = M68k::MOVEwrd;
+//    else if (M68k::ARRegClass.contains(DestReg))
+//      Opcode = M68k::MOVEwra;
+  } else if (M68k::R32RegClass.contains(SrcReg)) {
+    if (M68k::DR16RegClass.contains(DestReg))
+      Opcode = M68k::MOVElrd;
+    else if (M68k::ARRegClass.contains(DestReg))
+      Opcode = M68k::MOVElra;
   }
 
   // TODO(kwaters): status register
@@ -73,15 +71,14 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
   if (MI != MBB.end()) DL = MI->getDebugLoc();
 
   unsigned Opcode = 0;
-  if (RC == &M68k::DR32RegClass) {
-    Opcode = M68k::MOVEldm;
-  } else if (RC == &M68k::DR16RegClass) {
-    Opcode = M68k::MOVEwdm;
+  if (RC == &M68k::R32RegClass) {
+    Opcode = M68k::MOVElrm;
+  } else if (RC == &M68k::R16RegClass) {
+    Opcode = M68k::MOVEwrm;
   } else if (RC == &M68k::DR8RegClass) {
-    Opcode = M68k::MOVEbdm;
+    Opcode = M68k::MOVEbrm;
   } else {
     assert(RC == &M68k::ARRegClass && "Called with wrong RegClass.");
-    Opcode = M68k::MOVElam;
   }
 
   BuildMI(MBB, MI, DL, get(Opcode))
@@ -100,13 +97,14 @@ loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
   unsigned Opcode = 0;
   if (RC == &M68k::DR32RegClass) {
     Opcode = M68k::MOVElmd;
+  } else if (RC == &M68k::ARRegClass) {
+      Opcode = M68k::MOVElma;
   } else if (RC == &M68k::DR16RegClass) {
     Opcode = M68k::MOVEwmd;
   } else if (RC == &M68k::DR8RegClass) {
     Opcode = M68k::MOVEbmd;
   } else {
     assert(RC == &M68k::ARRegClass && "Called with wrong RegClass.");
-    Opcode = M68k::MOVElma;
   }
 
   BuildMI(MBB, MI, DL, get(Opcode), DestReg)
@@ -122,17 +120,17 @@ bool M68kInstrInfo::expandSext(MachineBasicBlock::iterator MI) const {
   default: llvm_unreachable("Bad sign extension");
   case M68k::EXTw_PSEUDO:
     SubReg = M68k::sub_byte;
-    MoveOp = M68k::MOVEbdd;
+    MoveOp = M68k::MOVEbrd;
     ExtOp = M68k::EXTw;
     break;
   case M68k::EXTBl_PSEUDO:
     SubReg = M68k::sub_byte;
-    MoveOp = M68k::MOVEbdd;
+    MoveOp = M68k::MOVEbrd;
     ExtOp = M68k::EXTl;
     break;
   case M68k::EXTl_PSEUDO:
     SubReg = M68k::sub_word;
-    MoveOp = M68k::MOVEwdd;
+    MoveOp = M68k::MOVEwrd;
     ExtOp = M68k::EXTl;
     break;
   }

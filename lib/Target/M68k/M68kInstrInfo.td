@@ -32,7 +32,8 @@ def mem : Operand<i32> {
 }
 
 // Pattern for immediates for "quick" instructions.
-def immQ : ImmLeaf<i32, [{ return isInt<8>(Imm); }]>;
+def i32immB : ImmLeaf<i32, [{ return isInt<8>(Imm); }]>;
+def i32immW : ImmLeaf<i32, [{ return isInt<16>(Imm); }]>;
 
 def i32imm1_8 : ImmLeaf<i32, [{ return 1 <= Imm && Imm <= 8; }]>;
 def i16imm1_8 : ImmLeaf<i16, [{ return 1 <= Imm && Imm <= 8; }]>;
@@ -102,14 +103,14 @@ def SizeB : SizeInfo<i8,  ".b", DR8,  i8imm,  i8imm1_8>;
 // [ ] BTST    [.] CHK     [ ] CLR     [ ] CMP     [ ] CMPA
 // [ ] CMPI    [ ] CMPM    [ ] DBcc    [ ] DIVS    [ ] DIVU
 // [X] EOR     [X] EORI    [.] EXG     [X] EXT     [ ] JMP
-// [ ] JSR     [X] LEA     [ ] LINK    [X] LSlr    [X] MOVE
-// [ ] MOVEA   [ ] MOVEM   [.] MOVEP   [X] MOVEQ   [ ] MULS
+// [ ] JSR     [X] LEA     [X] LINK    [X] LSlr    [X] MOVE
+// [X] MOVEA   [ ] MOVEM   [.] MOVEP   [X] MOVEQ   [ ] MULS
 // [ ] MULU    [.] NBCD    [X] NEG     [.] NEGX    [.] NOP
 // [X] NOT     [X] OR      [X] ORI     [ ] PEA     [.] RESET
 // [X] ROlr    [.] ROXlr   [.] RTE     [.] RTR     [ ] RTS
 // [.] SBCD    [ ] Scc     [.] STOP    [X] SUB     [ ] SUBA
 // [X] SUBI    [X] SUBQ    [X] SUBX    [X] SWAP    [?] TAS
-// [ ] TRAP    [.] TRAPV   [ ] TST     [ ] UNLK
+// [X] TRAP    [.] TRAPV   [ ] TST     [X] UNLK
 //
 // Exg might be useful, but would take some voodoo and the register allocation
 // level.
@@ -120,47 +121,55 @@ def SizeB : SizeInfo<i8,  ".b", DR8,  i8imm,  i8imm1_8>;
 
 // Register-Register moves (unselectable)
 
-multiclass M68kMoveInst<ValueType vt, string size, RegisterClass reg,
-                        Operand immop> {
+multiclass M68kMoveToDRInst<ValueType vt, string size, RegisterClass dreg,
+                        RegisterClass sreg, Operand immop> {
   let AsmString = !strconcat("move.", size, "\t$src, $dst") in {
-    def dd : M68kInst<(outs reg:$dst), (ins reg:$src), "", []>;
-    def id : M68kInst<(outs reg:$dst), (ins immop:$src), "",
-                      [(set reg:$dst, imm:$src)]>;
-    def md : M68kInst<(outs reg:$dst), (ins mem:$src), "",
-                      [(set reg:$dst, (load addr:$src))]>;
-
-    def im : M68kInst<(outs), (ins mem:$dst, immop:$src), "",
-                      [(store (vt imm:$src), addr:$dst)]>;
-    def dm : M68kInst<(outs), (ins mem:$dst, reg:$src), "",
-                      [(store reg:$src, addr:$dst)]>;
-    def mm : M68kInst<(outs), (ins mem:$dst, mem:$src), "",
-                      [(store (vt (load addr:$src)), addr:$dst)]>;
-
-    // TODO(kwaters): am, ad flavors including truncation, I'm not sure it can
-    // be selected automatically.
+    def rd : M68kInst<(outs dreg:$dst), (ins sreg:$src), "", []>;
+    def id : M68kInst<(outs dreg:$dst), (ins immop:$src), "",
+                      [(set dreg:$dst, imm:$src)]>;
+    def md : M68kInst<(outs dreg:$dst), (ins mem:$src), "",
+                      [(set dreg:$dst, (load addr:$src))]>;
   }
 }
 
+multiclass M68kMoveToARInst<ValueType vt, string size, RegisterClass sreg,
+                            Operand immop> {
+  let AsmString = !strconcat("movea.", size, "\t$src, $dst") in {
+    def ra : M68kInst<(outs AR:$dst), (ins sreg:$src), "", []>;
+    def ia : M68kInst<(outs AR:$dst), (ins immop:$src), "",
+                      [(set AR:$dst, imm:$src)]>;
+    def ma : M68kInst<(outs AR:$dst), (ins mem:$src), "",
+                      [(set AR:$dst, (load addr:$src))]>;
+  }
+}
+
+multiclass M68kMoveToMemInst<ValueType vt, string size, RegisterClass sreg,
+Operand immop> {
+  let AsmString = !strconcat("move.", size, "\t$src, $dst") in {
+    def rm : M68kInst<(outs), (ins mem:$dst, sreg:$src), "",
+                      [(store sreg:$src, addr:$dst)]>;
+    def im : M68kInst<(outs), (ins mem:$dst, immop:$src), "",
+                      [(store (vt imm:$src), addr:$dst)]>;
+    def mm : M68kInst<(outs), (ins mem:$dst, mem:$src), "",
+                      [(store (vt (load addr:$src)), addr:$dst)]>;
+  }
+}
+
+defm MOVEb : M68kMoveToDRInst<i8, "b", DR8, DR8, i8imm>;
+defm MOVEw : M68kMoveToDRInst<i16, "w", DR16, R16, i16imm>;
+defm MOVEl : M68kMoveToDRInst<i32, "l", DR32, R32, i32imm>;
+
+//defm MOVEw : M68kMoveToARInst<i16, "w", R16, i16imm>;
+defm MOVEl : M68kMoveToARInst<i32, "l", R32, i32imm>;
+
+defm MOVEb : M68kMoveToMemInst<i8, "b", DR8, i8imm>;
+defm MOVEw : M68kMoveToMemInst<i16, "w", R16, i16imm>;
+defm MOVEl : M68kMoveToMemInst<i32, "l", R32, i32imm>;
+
+
 def MOVEQ : M68kInst<(outs DR32:$dst), (ins i32imm:$src),
                      "moveq\t$src, $dst",
-                     [(set DR32:$dst, immQ:$src)]>;
-
-defm MOVEb : M68kMoveInst<i8, "b", DR8, i8imm>;
-defm MOVEw : M68kMoveInst<i16, "w", DR16, i16imm>;
-defm MOVEl : M68kMoveInst<i32, "l", DR32, i32imm>;
-
-// A register moves for copyPhysReg
-def MOVElaa : M68kInst<(outs AR:$dst), (ins AR:$src),
-                       "movea.l\t$src, $dst", []>;
-def MOVElad : M68kInst<(outs DR32:$dst), (ins AR:$src),
-                       "move.l\t$src, $dst", []>;
-def MOVElda : M68kInst<(outs AR:$dst), (ins DR32:$src),
-                       "movea.l\t$src, $dst", []>;
-
-def MOVElam : M68kInst<(outs), (ins mem:$dst, AR:$src),
-                       "move.l\t$src, $dst", []>;
-def MOVElma : M68kInst<(outs AR:$dst), (ins mem:$src),
-                       "move.l\t$src, $dst", []>;
+                     [(set DR32:$dst, i32immB:$src)]>;
 
 // TODO(kwaters): rename MOVEAld to MOVElad, etc.
 // TODO(kwaters): MOVEAlm MOVEAli
