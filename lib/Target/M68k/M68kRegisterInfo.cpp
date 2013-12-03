@@ -47,7 +47,7 @@ void M68kRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   uint64_t StackSize = MF.getFrameInfo()->getStackSize();
   int64_t SpOffset = MF.getFrameInfo()->getObjectOffset(FrameIndex);
   
-  if (FrameReg == M68k::A7) {
+  if (FrameReg == M68k::A7L) {
     SpOffset += 4;
   } else {
     SpOffset += 8;
@@ -63,9 +63,9 @@ void M68kRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
 BitVector M68kRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
-  Reserved.set(M68k::A5);
-  Reserved.set(M68k::A6);
-  Reserved.set(M68k::A7);
+//  Reserved.set(M68k::A5L);
+  Reserved.set(M68k::A6L);
+  Reserved.set(M68k::A7L);
   return Reserved;
 }
 
@@ -73,8 +73,8 @@ unsigned M68kRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const M68kFrameLowering *TFI =
   static_cast<const M68kFrameLowering*>(MF.getTarget().getFrameLowering());
   if (TFI->hasFP(MF)) {
-    return M68k::A6;
+    return M68k::A6L;
   } else {
-    return M68k::A7;
+    return M68k::A7L;
   }
 }

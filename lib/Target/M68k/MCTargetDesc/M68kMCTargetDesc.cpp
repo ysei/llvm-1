@@ -38,7 +38,7 @@ static MCAsmInfo *createM68kMCAsmInfo(const MCRegisterInfo &MRI, StringRef TT) {
   // TODO What does this do?
 
   MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(
-      0, MRI.getDwarfRegNum(M68k::A7, true), 4);
+      0, MRI.getDwarfRegNum(M68k::A7L, true), 4);
   MAI->addInitialFrameState(Inst);
   
   return MAI;

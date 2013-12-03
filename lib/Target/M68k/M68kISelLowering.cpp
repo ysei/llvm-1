@@ -79,13 +79,34 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
 
   for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
     CCValAssign &VA = ArgLocs[i];
+    SDValue ArgValue;
 
-    int FI = MFI->CreateFixedObject(VA.getLocVT().getStoreSize(),
-                                    VA.getLocMemOffset(), true);
-    SDValue FIN = DAG.getFrameIndex(FI, getPointerTy());
-    InVals.push_back(DAG.getLoad(VA.getValVT(), dl, Chain, FIN,
-                                 MachinePointerInfo::getFixedStack(FI),
-                                 false, false, false, 0));
+    if (VA.isMemLoc()) {
+      int FI = MFI->CreateFixedObject(VA.getLocVT().getStoreSize(),
+                                      VA.getLocMemOffset(), true);
+      SDValue FIN = DAG.getFrameIndex(FI, getPointerTy());
+      ArgValue = DAG.getLoad(VA.getValVT(), dl, Chain, FIN,
+                             MachinePointerInfo::getFixedStack(FI),
+                             false, false, false, 0);
+    } else {
+      EVT RegVT = VA.getLocVT();
+      const TargetRegisterClass *RC;
+
+      if (RegVT == MVT::i8)
+        RC = &M68k::DR8RegClass;
+      else if (RegVT == MVT::i16)
+        RC = &M68k::DR16RegClass;
+      else if (RegVT == MVT::i32)
+        RC = &M68k::DR32RegClass;
+      else
+        llvm_unreachable("RegVT not supported by FORMAL_ARGUMENTS Lowering");
+      
+      // Transform the arguments in physical registers into virtual ones.
+      unsigned Reg = MF.addLiveIn(VA.getLocReg(), RC);
+      ArgValue = DAG.getCopyFromReg(Chain, dl, Reg, RegVT);
+
+    }
+    InVals.push_back(ArgValue);
   }
 
   return Chain;

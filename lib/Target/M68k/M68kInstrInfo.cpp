@@ -41,10 +41,10 @@ void M68kInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   else if (M68k::R16RegClass.contains(SrcReg)) {
     if (M68k::DR16RegClass.contains(DestReg))
       Opcode = M68k::MOVEwrd;
-//    else if (M68k::ARRegClass.contains(DestReg))
-//      Opcode = M68k::MOVEwra;
+    else if (M68k::AR16RegClass.contains(DestReg))
+      Opcode = M68k::MOVEwra;
   } else if (M68k::R32RegClass.contains(SrcReg)) {
-    if (M68k::DR16RegClass.contains(DestReg))
+    if (M68k::DR32RegClass.contains(DestReg))
       Opcode = M68k::MOVElrd;
     else if (M68k::ARRegClass.contains(DestReg))
       Opcode = M68k::MOVElra;

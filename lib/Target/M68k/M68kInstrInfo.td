@@ -132,14 +132,14 @@ multiclass M68kMoveToDRInst<ValueType vt, string size, RegisterClass dreg,
   }
 }
 
-multiclass M68kMoveToARInst<ValueType vt, string size, RegisterClass sreg,
-                            Operand immop> {
+multiclass M68kMoveToARInst<ValueType vt, string size, RegisterClass dreg,
+                            RegisterClass sreg, Operand immop> {
   let AsmString = !strconcat("movea.", size, "\t$src, $dst") in {
-    def ra : M68kInst<(outs AR:$dst), (ins sreg:$src), "", []>;
-    def ia : M68kInst<(outs AR:$dst), (ins immop:$src), "",
-                      [(set AR:$dst, imm:$src)]>;
-    def ma : M68kInst<(outs AR:$dst), (ins mem:$src), "",
-                      [(set AR:$dst, (load addr:$src))]>;
+    def ra : M68kInst<(outs dreg:$dst), (ins sreg:$src), "", []>;
+    def ia : M68kInst<(outs dreg:$dst), (ins immop:$src), "",
+                      [(set dreg:$dst, imm:$src)]>;
+    def ma : M68kInst<(outs dreg:$dst), (ins mem:$src), "",
+                      [(set dreg:$dst, (load addr:$src))]>;
   }
 }
 
@@ -159,8 +159,8 @@ defm MOVEb : M68kMoveToDRInst<i8, "b", DR8, DR8, i8imm>;
 defm MOVEw : M68kMoveToDRInst<i16, "w", DR16, R16, i16imm>;
 defm MOVEl : M68kMoveToDRInst<i32, "l", DR32, R32, i32imm>;
 
-//defm MOVEw : M68kMoveToARInst<i16, "w", R16, i16imm>;
-defm MOVEl : M68kMoveToARInst<i32, "l", R32, i32imm>;
+defm MOVEw : M68kMoveToARInst<i16, "w", AR16, R16, i16imm>;
+defm MOVEl : M68kMoveToARInst<i32, "l", AR, R32, i32imm>;
 
 defm MOVEb : M68kMoveToMemInst<i8, "b", DR8, i8imm>;
 defm MOVEw : M68kMoveToMemInst<i16, "w", R16, i16imm>;

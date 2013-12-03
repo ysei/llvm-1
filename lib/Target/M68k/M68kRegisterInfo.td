@@ -43,6 +43,14 @@ multiclass M68kDataReg<bits<3> num, string defn, string n> {
   }
 }
 
+// Address registers are made up of 2 sub-sizes.
+multiclass M68kAddrReg<bits<3> num, string defn, string n> {
+  def W : M68kReg<num, n>;
+  def L : M68kRegWithSubregs<num, n, [!cast<Register>(defn # "W")]> {
+     let SubRegIndices = [sub_word];
+  }
+}
+
 //===----------------------------------------------------------------------===//
 //  Registers
 //===----------------------------------------------------------------------===//
@@ -56,14 +64,14 @@ defm D5 : M68kDataReg<5, "D5", "d5">;
 defm D6 : M68kDataReg<6, "D6", "d6">;
 defm D7 : M68kDataReg<7, "D7", "d7">;
 
-def A0 : M68kReg<0, "a0">;
-def A1 : M68kReg<1, "a1">;
-def A2 : M68kReg<2, "a2">;
-def A3 : M68kReg<3, "a3">;
-def A4 : M68kReg<4, "a4">;
-def A5 : M68kReg<5, "a5">;
-def A6 : M68kReg<6, "a6">;
-def A7 : M68kReg<7, "a7">;
+defm A0 : M68kAddrReg<0, "A0", "a0">;
+defm A1 : M68kAddrReg<1, "A1", "a1">;
+defm A2 : M68kAddrReg<2, "A2", "a2">;
+defm A3 : M68kAddrReg<3, "A3", "a3">;
+defm A4 : M68kAddrReg<4, "A4", "a4">;
+defm A5 : M68kAddrReg<5, "A5", "a5">;
+defm A6 : M68kAddrReg<6, "A6", "a6">;
+defm A7 : M68kAddrReg<7, "A7", "a7">;
 
 def PC : M68kReg<0, "pc">;
 def CCR : M68kReg<0, "ccr">;
@@ -76,12 +84,13 @@ def DR8  : RegisterClass<"M68k", [i8],   8, (add (sequence "D%uB", 0, 7))>;
 def DR16 : RegisterClass<"M68k", [i16], 16, (add (sequence "D%uW", 0, 7))>;
 def DR32 : RegisterClass<"M68k", [i32], 16, (add (sequence "D%uL", 0, 7))>;
 
-def AR   : RegisterClass<"M68k", [i32], 16, (add (sequence "A%u", 0, 7))>;
+def AR   : RegisterClass<"M68k", [i32], 16, (add (sequence "A%uL", 0, 7))>;
+def AR16 : RegisterClass<"M68k", [i16], 16, (add (sequence "A%uW", 0, 7))>;
 
 def R16 : RegisterClass<"M68k", [i16], 16, (add (sequence "D%uW", 0, 7),
-                                                (sequence "A%u", 0, 7))>;
+                                                (sequence "A%uW", 0, 7))>;
 def R32 : RegisterClass<"M68k", [i32], 16, (add (sequence "D%uL", 0, 7),
-                                                (sequence "A%u", 0, 7))>;
+                                                (sequence "A%uL", 0, 7))>;
 
 def CR : RegisterClass<"M68k", [i8], 8, (add CCR)> {
   let CopyCost = -1;
